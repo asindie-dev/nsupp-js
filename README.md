@@ -2,7 +2,7 @@
 
 Typed, dependency-free client for the **nsupp `/cof/v1` REST API**. Works in Node 18+ and the browser.
 
-Handles HTTP Basic auth + the `X-Cof-Tier` header, unwraps the `{ error, data }` envelope, throws a typed `NsuppApiError` on failures, and gives you a website-scoped helper. Every one of the 139 endpoints is reachable — the common ones as typed methods, the rest via the `request()` escape hatch.
+Handles HTTP Basic auth + the `X-Cof-Tier` header, unwraps the `{ error, data }` envelope, throws a typed `NsuppApiError` on failures, and gives you a website-scoped helper. Every one of the 152 endpoints is reachable — the common ones (including the support differentiators: email/marketplace/review replies, internal notes, canned replies, order notes) as typed methods, the rest via the `request()` escape hatch.
 
 ## Install
 
@@ -37,7 +37,7 @@ try {
 }
 ```
 
-## Escape hatch — any of the 139 endpoints
+## Escape hatch — any of the 152 endpoints
 
 ```ts
 // website-scoped

@@ -115,7 +115,7 @@ export class WebsiteScope {
   private path(sub: string): string {
     return `/v1/website/${enc(this.websiteId)}${sub}`;
   }
-  /** Bu web sitesine sabitlenmiş ham istek (kapsanmayan herhangi bir alt-yol; 139/139 erişilebilir). */
+  /** Bu web sitesine sabitlenmiş ham istek (tipli sarmalayıcısı olmayan HERHANGİ bir /v1 alt-yolu). */
   request<T = unknown>(method: string, sub: string, opts?: RequestOptions): Promise<T> {
     return this.client.request<T>(method, this.path(sub), opts);
   }
@@ -138,8 +138,24 @@ export class WebsiteScope {
   getMessages<T = unknown>(sessionId: string): Promise<T> {
     return this.request('GET', `/conversation/${enc(sessionId)}/messages`);
   }
-  sendMessage<T = unknown>(sessionId: string, content: string): Promise<T> {
-    return this.request('POST', `/conversation/${enc(sessionId)}/message`, { body: { content } });
+  sendMessage<T = unknown>(sessionId: string, content: string, attachments?: unknown[]): Promise<T> {
+    return this.request('POST', `/conversation/${enc(sessionId)}/message`, { body: { content, ...(attachments ? { attachments } : {}) } });
+  }
+  /** İç ekip notu (private note; müşteriye gitmez). Scope: website:conversation:notes. */
+  addInternalNote<T = unknown>(sessionId: string, content: string): Promise<T> {
+    return this.request('POST', `/conversation/${enc(sessionId)}/note`, { body: { content } });
+  }
+  /** E-posta ticket'ına yanıt (Microsoft/e-posta kanalına teslim). Scope: website:conversation:messages. */
+  emailReply<T = unknown>(sessionId: string, content: string): Promise<T> {
+    return this.request('POST', `/conversation/${enc(sessionId)}/email-reply`, { body: { content } });
+  }
+  /** Pazaryeri mesajı/Q&A yanıtı (konnektör üzerinden teslim). Scope: website:marketplace. */
+  marketplaceReply<T = unknown>(sessionId: string, content: string): Promise<T> {
+    return this.request('POST', `/conversation/${enc(sessionId)}/marketplace-reply`, { body: { content } });
+  }
+  /** Ürün yorumu yanıtı (çift-cevap CAS kilidi). Scope: website:reviews. */
+  reviewReply<T = unknown>(sessionId: string, content: string): Promise<T> {
+    return this.request('POST', `/conversation/${enc(sessionId)}/review-reply`, { body: { content } });
   }
   setConversationState<T = unknown>(sessionId: string, state: string): Promise<T> {
     return this.request('PATCH', `/conversation/${enc(sessionId)}/state`, { body: { state } });
@@ -150,11 +166,43 @@ export class WebsiteScope {
   markRead<T = unknown>(sessionId: string): Promise<T> {
     return this.request('PATCH', `/conversation/${enc(sessionId)}/read`);
   }
+  /** Görüşmenin müşteri kişisi (kime yanıt: email/ad/people_id). Scope: website:people:profiles. */
+  getContact<T = unknown>(sessionId: string): Promise<T> {
+    return this.request('GET', `/conversation/${enc(sessionId)}/contact`);
+  }
   listParticipants<T = unknown>(sessionId: string): Promise<T> {
     return this.request('GET', `/conversation/${enc(sessionId)}/participants`);
   }
   addParticipant<T = unknown>(sessionId: string, operatorEmail: string): Promise<T> {
     return this.request('POST', `/conversation/${enc(sessionId)}/participants`, { body: { operator_email: operatorEmail } });
+  }
+  removeParticipant<T = unknown>(sessionId: string, operatorEmail: string): Promise<T> {
+    return this.request('DELETE', `/conversation/${enc(sessionId)}/participants/${enc(operatorEmail)}`);
+  }
+
+  // ── Canned replies (composer macros) — Scope: website:canned ──
+  listCannedReplies<T = unknown>(): Promise<T> {
+    return this.request('GET', '/canned-replies');
+  }
+  createCannedReply<T = unknown>(body: { shortcut: string; body: string; title?: string }): Promise<T> {
+    return this.request('POST', '/canned-replies', { body });
+  }
+  updateCannedReply<T = unknown>(id: string, body: unknown): Promise<T> {
+    return this.request('PATCH', `/canned-replies/${enc(id)}`, { body });
+  }
+  deleteCannedReply<T = unknown>(id: string): Promise<T> {
+    return this.request('DELETE', `/canned-replies/${enc(id)}`);
+  }
+
+  // ── Order notes (eDesk Order notes; AES-GCM at rest) — Scope: website:orders:notes ──
+  listOrderNotes<T = unknown>(connector: string, order: string): Promise<T> {
+    return this.request('GET', '/orders/notes', { query: { connector, order } });
+  }
+  createOrderNote<T = unknown>(body: { connectorId: string; orderNumber: string; body: string; conversationId?: string }): Promise<T> {
+    return this.request('POST', '/orders/notes', { body });
+  }
+  deleteOrderNote<T = unknown>(id: string): Promise<T> {
+    return this.request('DELETE', `/orders/notes/${enc(id)}`);
   }
 
   // ── People ──

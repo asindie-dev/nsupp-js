@@ -74,6 +74,37 @@ describe('@posthubify/rest-sdk', () => {
     expect(m.calls[3]!.url).toBe('https://api.nsupp.com/cof/v1/website/pk9/anything/custom');
   });
 
+  it('destek-farklılaştırıcı tipli yardımcılar (reply/note/contact/canned/order-notes) doğru yol+method kurar', async () => {
+    const m = mockFetch(Array.from({ length: 12 }, () => ({ status: 200, json: { error: false, data: {} } })));
+    const c = new NsuppRestClient({ ...base, websiteId: 'pk9', fetch: m.fn });
+    const w = c.website();
+    const B = 'https://api.nsupp.com/cof/v1/website/pk9';
+    await w.emailReply('s1', 'yanıt');
+    expect([m.calls[0]!.method, m.calls[0]!.url]).toEqual(['POST', `${B}/conversation/s1/email-reply`]);
+    await w.marketplaceReply('s1', 'y');
+    expect(m.calls[1]!.url).toBe(`${B}/conversation/s1/marketplace-reply`);
+    await w.reviewReply('s1', 'y');
+    expect(m.calls[2]!.url).toBe(`${B}/conversation/s1/review-reply`);
+    await w.addInternalNote('s1', 'iç not');
+    expect([m.calls[3]!.method, m.calls[3]!.url]).toEqual(['POST', `${B}/conversation/s1/note`]);
+    await w.getContact('s1');
+    expect(m.calls[4]!.url).toBe(`${B}/conversation/s1/contact`);
+    await w.removeParticipant('s1', 'lee@acme.com');
+    expect([m.calls[5]!.method, m.calls[5]!.url]).toEqual(['DELETE', `${B}/conversation/s1/participants/lee%40acme.com`]);
+    await w.sendMessage('s1', 'x', [{ type: 'file', url: 'https://x/y.pdf' }]);
+    expect(m.calls[6]!.body).toBe('{"content":"x","attachments":[{"type":"file","url":"https://x/y.pdf"}]}');
+    await w.createCannedReply({ shortcut: 'iade', body: '3-5 gün' });
+    expect([m.calls[7]!.method, m.calls[7]!.url]).toEqual(['POST', `${B}/canned-replies`]);
+    await w.deleteCannedReply('cr1');
+    expect([m.calls[8]!.method, m.calls[8]!.url]).toEqual(['DELETE', `${B}/canned-replies/cr1`]);
+    await w.listOrderNotes('trendyol', 'TY-4471');
+    expect(m.calls[9]!.url).toBe(`${B}/orders/notes?connector=trendyol&order=TY-4471`);
+    await w.createOrderNote({ connectorId: 'trendyol', orderNumber: 'TY-4471', body: 'not' });
+    expect([m.calls[10]!.method, m.calls[10]!.url]).toEqual(['POST', `${B}/orders/notes`]);
+    await w.deleteOrderNote('on1');
+    expect([m.calls[11]!.method, m.calls[11]!.url]).toEqual(['DELETE', `${B}/orders/notes/on1`]);
+  });
+
   it('HEAD → void (2xx), 404 → NsuppApiError; baseUrl override + tier=website', async () => {
     const m = mockFetch([{ status: 200 }, { status: 404 }]);
     const c = new NsuppRestClient({ ...base, tier: 'website', baseUrl: 'http://localhost:8788/cof/', fetch: m.fn });
