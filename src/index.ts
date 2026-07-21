@@ -244,4 +244,59 @@ export class WebsiteScope {
   }
 }
 
+// ── Web Hook signature verification ────────────────────────────────────────────
+export interface WebhookVerifyInput {
+  /** The RAW request body, exactly as received (do NOT re-parse/re-serialize — that changes the bytes). */
+  payload: string;
+  /** The X-Cof-Signature header (hex HMAC-SHA256). */
+  signature: string;
+  /** The X-Cof-Request-Timestamp header (the value is part of the signed string). */
+  timestamp: string | number;
+  /** Your web hook signing secret (cof_whsec_… for website hooks, or your plugin secret). */
+  secret: string;
+  /** Replay window in seconds; deliveries older than this are rejected. Default 300 (5 min). */
+  toleranceSec?: number;
+  /** Injectable clock (ms since epoch) for testing. Default Date.now(). */
+  now?: number;
+}
+
+function timingSafeEqualHex(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let r = 0;
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return r === 0;
+}
+
+async function hmacSha256Hex(secret: string, message: string): Promise<string> {
+  const subtle = (globalThis as { crypto?: { subtle?: SubtleCrypto } }).crypto?.subtle;
+  if (!subtle) throw new Error('WebCrypto (crypto.subtle) unavailable — verify web hooks on a Node 18+/worker/browser runtime.');
+  const encoder = new TextEncoder();
+  const key = await subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await subtle.sign('HMAC', key, encoder.encode(message));
+  return Array.from(new Uint8Array(sig)).map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Verify an nsupp Web Hook delivery. Recomputes HMAC-SHA256(`${timestamp};${rawBody}`, secret) over the
+ * RAW body, compares it to X-Cof-Signature in constant time, and rejects stale timestamps (replay defense).
+ * Returns true only when the signature matches AND the timestamp is within the tolerance window.
+ *
+ * @example
+ * const ok = await verifyWebhook({
+ *   payload: rawBody,                                  // the exact bytes you received
+ *   signature: req.headers['x-cof-signature'],
+ *   timestamp: req.headers['x-cof-request-timestamp'],
+ *   secret: process.env.NSUPP_WEBHOOK_SECRET,
+ * });
+ * if (!ok) return res.status(400).end();
+ */
+export async function verifyWebhook(input: WebhookVerifyInput): Promise<boolean> {
+  const { payload, signature, timestamp, secret, toleranceSec = 300, now = Date.now() } = input;
+  const tsNum = Number(timestamp);
+  if (!Number.isFinite(tsNum)) return false;
+  if (Math.abs(now - tsNum) > toleranceSec * 1000) return false;
+  const expected = await hmacSha256Hex(secret, `${timestamp};${payload}`);
+  return timingSafeEqualHex(String(signature), expected);
+}
+
 export default NsuppRestClient;

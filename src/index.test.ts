@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { NsuppRestClient, NsuppApiError } from './index';
+import { createHmac } from 'node:crypto';
+import { NsuppRestClient, NsuppApiError, verifyWebhook } from './index';
 
 type Call = { url: string; method: string; headers: Record<string, string>; body?: string };
 
@@ -119,5 +120,34 @@ describe('@posthubify/rest-sdk', () => {
     expect(() => new NsuppRestClient({ fetch: (() => {}) as never })).toThrow();
     const c = new NsuppRestClient({ ...base, fetch: (() => {}) as never });
     expect(() => c.website()).toThrow(/websiteId/);
+  });
+});
+
+describe('verifyWebhook', () => {
+  const secret = 'cof_whsec_test';
+  const payload = '{"id":"evt_1","event":"message:received","data":{"x":1}}';
+  const ts = 1_784_361_825_398;
+  // Bağımsız oracle: sunucunun imzaladığı gibi HMAC-SHA256(`${ts};${body}`) (node:crypto).
+  const sign = (t: number | string, body: string) =>
+    createHmac('sha256', secret).update(`${t};${body}`).digest('hex');
+
+  it('geçerli imza + taze timestamp → true', async () => {
+    const ok = await verifyWebhook({ payload, signature: sign(ts, payload), timestamp: ts, secret, now: ts + 1000 });
+    expect(ok).toBe(true);
+  });
+  it('kurcalanmış gövde → false', async () => {
+    const ok = await verifyWebhook({ payload: payload + ' ', signature: sign(ts, payload), timestamp: ts, secret, now: ts + 1000 });
+    expect(ok).toBe(false);
+  });
+  it('yanlış secret → false', async () => {
+    const bad = createHmac('sha256', 'nope').update(`${ts};${payload}`).digest('hex');
+    expect(await verifyWebhook({ payload, signature: bad, timestamp: ts, secret, now: ts + 1000 })).toBe(false);
+  });
+  it('5 dk penceresinden eski timestamp → false (replay)', async () => {
+    const ok = await verifyWebhook({ payload, signature: sign(ts, payload), timestamp: ts, secret, now: ts + 6 * 60 * 1000 });
+    expect(ok).toBe(false);
+  });
+  it('sayısal olmayan timestamp → false', async () => {
+    expect(await verifyWebhook({ payload, signature: sign(ts, payload), timestamp: 'nope', secret, now: ts })).toBe(false);
   });
 });
