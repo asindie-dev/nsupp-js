@@ -20,7 +20,7 @@ function mockFetch(queue: Array<{ status: number; json?: unknown; text?: string 
 
 const base = { identifier: 'nsupp_pk_abc', secret: 's3cr3t' };
 
-describe('@posthubify/rest-sdk', () => {
+describe('@nsupp/rest-sdk', () => {
   it('kimlik doğrulama başlıkları: HTTP Basic + X-Cof-Tier; zarf açılır (data döner)', async () => {
     const m = mockFetch([{ status: 200, json: { error: false, data: { name: 'Acme' } } }]);
     const c = new NsuppRestClient({ ...base, fetch: m.fn });

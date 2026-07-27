@@ -1,4 +1,4 @@
-# @posthubify/rest-sdk
+# @nsupp/rest-sdk
 
 Typed, dependency-free client for the **nsupp `/cof/v1` REST API**. Works in Node 18+ and the browser.
 
@@ -7,13 +7,13 @@ Handles HTTP Basic auth + the `X-Cof-Tier` header, unwraps the `{ error, data }`
 ## Install
 
 ```bash
-npm install @posthubify/rest-sdk
+npm install @nsupp/rest-sdk
 ```
 
 ## Quickstart
 
 ```ts
-import { NsuppRestClient, NsuppApiError } from '@posthubify/rest-sdk';
+import { NsuppRestClient, NsuppApiError } from '@nsupp/rest-sdk';
 
 const nsupp = new NsuppRestClient({
   identifier: process.env.NSUPP_IDENTIFIER!, // nsupp_pk_… / nsupp_wt_…
@@ -52,3 +52,10 @@ await nsupp.request('GET', '/v1/website/8f3c…/campaign-templates');
 `NsuppApiError` carries `message` (the API `reason`), `code` (stable machine code, e.g. `scope_denied`), and `status`.
 
 See the full endpoint reference at **/docs/references/rest-api** (each endpoint has a live "Try it" console).
+
+## License
+
+Licensed under the [Apache License 2.0](./LICENSE).
+
+"nsupp" and the nsupp logo are trademarks of Asindie, Inc. The license grants no trademark rights — see the
+[trademark policy](https://github.com/asindie-dev/nsupp/blob/main/TRADEMARK.md) for what use is permitted.

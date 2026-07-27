@@ -1,4 +1,7 @@
-// @posthubify/rest-sdk — nsupp /cof/v1 REST API için tipli, bağımlılıksız istemci (Node 18+ ve tarayıcı).
+// SPDX-FileCopyrightText: 2026 Asindie, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
+// @nsupp/rest-sdk — nsupp /cof/v1 REST API için tipli, bağımlılıksız istemci (Node 18+ ve tarayıcı).
 // Kimlik doğrulama (HTTP Basic + X-Cof-Tier), zarf açma ({error,data}), hata sınıfı + web-sitesi kapsamı.
 // En-çok-kullanılan uçlar tipli yardımcılarla; KAPSANMAYAN her uç `request()` kaçış-kapısıyla erişilebilir (139/139).
 

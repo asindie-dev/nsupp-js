@@ -1,5 +1,5 @@
 {
-  "name": "@posthubify/rest-sdk",
+  "name": "@nsupp/rest-sdk",
   "version": "0.1.0",
   "description": "Typed, dependency-free client for the nsupp /cof/v1 REST API — auth, envelope handling, website-scoped helpers. Node 18+ and browser.",
   "type": "module",
@@ -14,20 +14,22 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "NOTICE"
   ],
   "sideEffects": false,
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "nsupp",
     "rest",
     "api",
     "sdk",
-    "support",
-    "crisp"
+    "support"
   ],
-  "license": "UNLICENSED"
+  "license": "Apache-2.0"
 }
