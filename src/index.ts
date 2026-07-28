@@ -251,6 +251,23 @@ export class WebsiteScope {
   listInboxes<T = unknown>(): Promise<T> {
     return this.request('GET', '/inboxes');
   }
+  // ── Arşiv (0175) — duruma DİK eksen ──
+  /** Görüşme durumu + arşiv bayrağı. */
+  getConversationState<T = unknown>(sessionId: string): Promise<T> {
+    return this.request('GET', `/conversation/${enc(sessionId)}/state`);
+  }
+  /**
+   * Durum ve/veya arşiv bayrağını değiştir (ikisi tek çağrıda gönderilebilir).
+   * Arşiv YALNIZ çözülmüş görüşmede geçerlidir (açık talebi arşivlemek onu operatörden gizlerken
+   * müşteriyi bekletirdi → 400 `not_resolved`). Yeniden açılınca arşiv damgası OTOMATİK temizlenir.
+   */
+  setConversationState<T = unknown>(
+    sessionId: string,
+    body: { state?: 'pending' | 'unresolved' | 'resolved'; archived?: boolean },
+  ): Promise<T> {
+    return this.request('PATCH', `/conversation/${enc(sessionId)}/state`, { body });
+  }
+
   getInbox<T = unknown>(inboxId: string): Promise<T> {
     return this.request('GET', `/inbox/${enc(inboxId)}`);
   }
