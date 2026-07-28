@@ -265,6 +265,24 @@ export class WebsiteScope {
     return this.request('GET', '/audit', { query: query as RequestOptions['query'] });
   }
 
+  // ── Ekip sohbeti — scope: website:team:chat ──
+  /**
+   * Ekibin GENEL kanalını oku. KAPSAM BİLEREK DAR: özel gruplar ve birebir mesajlar API'de YOKTUR —
+   * o kanalların üyeliği KİŞİ kimliğine bağlıdır, API anahtarının arkasında kişi yoktur.
+   * Silinen mesaj yerinde kalır (`content: ''`, `deleted: true`) — akışta delik açılmaz.
+   */
+  listTeamChatMessages<T = unknown>(query?: { after?: string; limit?: number }): Promise<T> {
+    return this.request('GET', '/team-chat', { query: query as RequestOptions['query'] });
+  }
+  /**
+   * Genel ekip kanalına mesaj yaz (dağıtım bitti · SLA aşılmak üzere · nöbet devri). ZİYARETÇİYE GİTMEZ.
+   * Yazar adı SENİN eklenti kimliğinden gelir, gövdeden değil: bir eklenti kendini başka bir uygulama
+   * ya da bir operatör gibi gösteremez; panel bu mesajları "Uygulama" rozetiyle işaretler.
+   */
+  postTeamChatMessage<T = unknown>(content: string): Promise<T> {
+    return this.request('POST', '/team-chat', { body: { content } });
+  }
+
   // ── Kişisel veri paylaşımı (0179) — scope: website:disclosure ──
   /**
    * Operatör bu görüşmede müşteriyi doğruladı mı ve hangi siparişler paylaşılabilir?
