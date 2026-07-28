@@ -175,9 +175,6 @@ export class WebsiteScope {
   reviewReply<T = unknown>(sessionId: string, content: string): Promise<T> {
     return this.request('POST', `/conversation/${enc(sessionId)}/review-reply`, { body: { content } });
   }
-  setConversationState<T = unknown>(sessionId: string, state: string): Promise<T> {
-    return this.request('PATCH', `/conversation/${enc(sessionId)}/state`, { body: { state } });
-  }
   updateConversationMeta<T = unknown>(sessionId: string, meta: unknown): Promise<T> {
     return this.request('PATCH', `/conversation/${enc(sessionId)}/meta`, { body: meta });
   }
@@ -251,6 +248,23 @@ export class WebsiteScope {
   listInboxes<T = unknown>(): Promise<T> {
     return this.request('GET', '/inboxes');
   }
+  // ── Şeffaflık günlüğü (salt-okur) — scope: website:audit ──
+  /**
+   * Çalışma alanı denetim kaydını oku. YAZMA YOLU YOKTUR: kaydı sistem üretir; eklenti yazabilseydi
+   * iz sahtelenebilir ve kanıt olmaktan çıkardı. Toplama kapalıysa yanıt `enabled: false` der
+   * (boş liste "hiç eylem olmadı" gibi okunurdu). Essentials altı planda yalnız en yeni 20 satır
+   * döner ve filtreler yok sayılır (`locked.filters_disabled`) — kayıt SİLİNMEZ, yükseltmede geri gelir.
+   */
+  listAuditEvents<T = unknown>(query?: {
+    from?: string;
+    to?: string;
+    operator?: string;
+    action?: string;
+    limit?: number;
+  }): Promise<T> {
+    return this.request('GET', '/audit', { query: query as RequestOptions['query'] });
+  }
+
   // ── Kişisel veri paylaşımı (0179) — scope: website:disclosure ──
   /**
    * Operatör bu görüşmede müşteriyi doğruladı mı ve hangi siparişler paylaşılabilir?
@@ -285,9 +299,11 @@ export class WebsiteScope {
    */
   setConversationState<T = unknown>(
     sessionId: string,
-    body: { state?: 'pending' | 'unresolved' | 'resolved'; archived?: boolean },
+    /** Geriye uyum: düz string = yalnız durum ('resolved'). Nesne = durum ve/veya arşiv. */
+    body: 'pending' | 'unresolved' | 'resolved' | { state?: 'pending' | 'unresolved' | 'resolved'; archived?: boolean },
   ): Promise<T> {
-    return this.request('PATCH', `/conversation/${enc(sessionId)}/state`, { body });
+    const payload = typeof body === 'string' ? { state: body } : body;
+    return this.request('PATCH', `/conversation/${enc(sessionId)}/state`, { body: payload });
   }
 
   getInbox<T = unknown>(inboxId: string): Promise<T> {
