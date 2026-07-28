@@ -251,6 +251,28 @@ export class WebsiteScope {
   listInboxes<T = unknown>(): Promise<T> {
     return this.request('GET', '/inboxes');
   }
+  // ── Kişisel veri paylaşımı (0179) — scope: website:disclosure ──
+  /**
+   * Operatör bu görüşmede müşteriyi doğruladı mı ve hangi siparişler paylaşılabilir?
+   * DOĞRULAMA API'de YOKTUR: kapıyı açmak operatörün canlı temasta verdiği güven kararıdır
+   * (API'den açılabilseydi sipariş-no + e-posta denemeleri programatik bir sorgulayıcıya dönerdi).
+   */
+  getDisclosure<T = unknown>(sessionId: string): Promise<T> {
+    return this.request('GET', `/conversation/${enc(sessionId)}/disclosure`);
+  }
+  /**
+   * Doğrulanmış siparişi sohbete KART olarak gönder (no + durum + kargo + takip linki).
+   * Kart SUNUCUDA kurulur — gönderdiğiniz başlık/görsel/link YOK SAYILIR. Kartta alıcının adı,
+   * adresi, telefonu ve e-postası ASLA bulunmaz. Doğrulanmamışsa 403 `disclosure_unverified`.
+   */
+  shareOrder<T = unknown>(sessionId: string, body: { connector_id: string; order_number: string }): Promise<T> {
+    return this.request('POST', `/conversation/${enc(sessionId)}/disclosure/share`, { body: { kind: 'order', ...body } });
+  }
+  /** Ürün kartı gönder — katalog kişisel veri DEĞİL, doğrulama kapısı YOKTUR. */
+  shareProduct<T = unknown>(sessionId: string, body: { connector_id: string; product_id: string }): Promise<T> {
+    return this.request('POST', `/conversation/${enc(sessionId)}/share-product`, { body });
+  }
+
   // ── Arşiv (0175) — duruma DİK eksen ──
   /** Görüşme durumu + arşiv bayrağı. */
   getConversationState<T = unknown>(sessionId: string): Promise<T> {
