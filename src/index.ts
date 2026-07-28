@@ -50,6 +50,21 @@ function base64(s: string): string {
 
 const enc = encodeURIComponent;
 
+/** Alt kutu otomatik-yönlendirme kuralı (Sub-inbox routing rule). */
+export interface InboxRule {
+  kind: 'email' | 'locale' | 'country' | 'segment' | 'data' | 'sla';
+  op?: 'eq' | 'contains';
+  value?: string;
+  /** `data` kuralı için ziyaretçi özniteliği adı (ör. 'plan'). `$`/`_` önekleri reddedilir. */
+  key?: string;
+  /** `sla` kuralı için gün eşiği (1-365). Alternatif: value: 'overdue'. */
+  slaWithinDays?: number;
+}
+/** Koşul bloğu: manual=true → kural yok (elle taşınır); değilse mode + rules (en fazla 10). */
+export type InboxConditions =
+  | { manual: true }
+  | { manual: false; mode?: 'and' | 'or'; rules: InboxRule[] };
+
 export class NsuppRestClient {
   private readonly baseUrl: string;
   private readonly authHeader: string;
@@ -217,6 +232,59 @@ export class WebsiteScope {
   }
   createPerson<T = unknown>(body: unknown): Promise<T> {
     return this.request('POST', '/people/profile', { body });
+  }
+  /**
+   * Kişi özel alanlarını BİRLEŞTİR (kısmi güncelleme).
+   * Tavanlar: istek başına 30, kişi başına 60 anahtar; anahtar ≤64, değer (JSON) ≤1024 karakter.
+   * Tavanı aşan anahtar KIRPILMAZ, DÜŞÜRÜLÜR — kaç tanesinin düştüğü `X-Cof-Attributes-Dropped`
+   * yanıt başlığındadır. `$…` (nsupp) ve `_…` (operatör) önekli anahtarlar reddedilir.
+   */
+  updatePersonData<T = unknown>(peopleId: string, data: Record<string, unknown>): Promise<T> {
+    return this.request('PATCH', `/people/${enc(peopleId)}/data`, { body: data });
+  }
+  /** Kişi özel alanlarını TAM DEĞİŞTİR. Ayrılmış (`$…`/`_…`) anahtarlar KORUNUR — silinemez. */
+  replacePersonData<T = unknown>(peopleId: string, data: Record<string, unknown>): Promise<T> {
+    return this.request('PUT', `/people/${enc(peopleId)}/data`, { body: data });
+  }
+
+  // ── Alt kutular (Inbox) — otomatik yönlendirme kuralları dahil ──
+  listInboxes<T = unknown>(): Promise<T> {
+    return this.request('GET', '/inboxes');
+  }
+  getInbox<T = unknown>(inboxId: string): Promise<T> {
+    return this.request('GET', `/inbox/${enc(inboxId)}`);
+  }
+  /**
+   * Alt kutu oluştur. `conditions` ile OTOMATİK yönlendirme kurulur:
+   *   { manual: false, mode: 'and'|'or', rules: [{ kind, op, value, key?, slaWithinDays? }] }
+   * kind: email · locale · country · segment · data · sla. `data` kuralı `key` ister (ör. 'plan');
+   * `$`/`_` önekli anahtarlar reddedilir. `sla` için value:'overdue' ya da slaWithinDays (1-365);
+   * birden çok SLA kuralı eşleşirse EN DAR eşik kazanır.
+   */
+  createInbox<T = unknown>(body: {
+    name: string;
+    emoji?: string;
+    priority?: number;
+    access?: { general: boolean; operatorEmails?: string[] };
+    conditions?: InboxConditions;
+  }): Promise<T> {
+    return this.request('POST', '/inbox', { body });
+  }
+  /** Alt kutuyu güncelle (yalnız gönderilen alanlar değişir). */
+  saveInbox<T = unknown>(
+    inboxId: string,
+    body: {
+      name?: string;
+      emoji?: string;
+      priority?: number;
+      access?: { general: boolean; operatorEmails?: string[] };
+      conditions?: InboxConditions;
+    },
+  ): Promise<T> {
+    return this.request('PUT', `/inbox/${enc(inboxId)}`, { body });
+  }
+  deleteInbox<T = unknown>(inboxId: string): Promise<T> {
+    return this.request('DELETE', `/inbox/${enc(inboxId)}`);
   }
 
   // ── Helpdesk ──
