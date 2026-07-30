@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { createHmac } from 'node:crypto';
-import { NsuppRestClient, NsuppApiError, verifyWebhook } from './index';
+import { NsuppRestClient, NsuppApiError, verifyWebhook, canonicalIdentityEmail, signIdentity } from './index';
 
 type Call = { url: string; method: string; headers: Record<string, string>; body?: string };
 
@@ -150,4 +150,23 @@ describe('verifyWebhook', () => {
   it('sayısal olmayan timestamp → false', async () => {
     expect(await verifyWebhook({ payload, signature: sign(ts, payload), timestamp: 'nope', secret, now: ts })).toBe(false);
   });
+});
+
+describe('signIdentity', () => {
+  const secret = 'cof_idv_000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f';
+  // ALTIN VEKTÖRLER — sunucunun kendi çıktısı (sözleşme). Diller arası bayt-pariti burada kilitlenir.
+  const vectors: Array<[string, string, string]> = [
+    ['  Jane@Acme.COM ', 'jane@acme.com', '323dac99d5f34749a31d2d259656694d5e9d229ee2e082bebeac179d01227ba7'],
+    ['jane@acme.com', 'jane@acme.com', '323dac99d5f34749a31d2d259656694d5e9d229ee2e082bebeac179d01227ba7'],
+    ['İSTANBUL@X.com', 'İstanbul@x.com', '84b516b5e7726e82f5ac7ac39503c02536a3ef0d9aafa40c97d6268c2d83ee14'],
+    ['Ömer@Example.COM', 'Ömer@example.com', 'a7270723fac1793d032910ea1231939a8f9d5c3cab49049b243e875a671f0297'],
+    ['\t\r\n\v\f a@b.co \t\n', 'a@b.co', '7c41ce285323036c431de959bc0ef1388be7a5e9767add221e73496d3c8297a2'],
+  ];
+
+  for (const [input, canonical, signature] of vectors) {
+    it(`${JSON.stringify(input)} → kanonik ${JSON.stringify(canonical)} + imza`, async () => {
+      expect(canonicalIdentityEmail(input)).toBe(canonical);
+      expect(await signIdentity(input, secret)).toBe(signature);
+    });
+  }
 });

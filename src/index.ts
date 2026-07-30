@@ -443,4 +443,60 @@ export async function verifyWebhook(input: WebhookVerifyInput): Promise<boolean>
   return timingSafeEqualHex(String(signature), expected);
 }
 
+// ── Identity verification (visitor e-mail signing) ─────────────────────────────
+/** Kanonik biçimde kırpılan baytlar: space, \t, \n, \r, \v, \f — SADECE bunlar. */
+const IDENTITY_TRIM_BYTES = [0x20, 0x09, 0x0a, 0x0d, 0x0b, 0x0c];
+
+/**
+ * Kanonik e-posta biçimi: baş/sondaki 6 ASCII boşluk baytı atılır, sonra YALNIZ A-Z → a-z eşlenir.
+ * ASCII-dışı harfler (İ, Ö, ß…) OLDUĞU GİBİ kalır — bilinçli ve dokümante bir sınır.
+ *
+ * NİÇİN `trim()` / `toLowerCase()` kullanılmıyor: bu imzayı müşterinin sunucusu (Go, PHP, Python…)
+ * üretir, biz doğrularız — yani kural beş uygulamada BAYT BAYT aynı olmak zorunda. Dilin hazır
+ * fonksiyonları bunu sağlamıyor: 'İSTANBUL@X.com' JS/Python'da "i̇stanbul@x.com" (U+0130 iki koda
+ * ayrışır), Go'da "istanbul@x.com", PHP'de "İstanbul@x.com" verir; Unicode kırpma da ayrışır
+ * (PHP trim yalnız ASCII, diğerleri U+00A0 gibi boşlukları da atar). Tek ortak payda, aralığı
+ * elle kontrol eden bu kod-birimi döngüsüdür. SADELEŞTİRMEYİN — diller arası imza uyumu kırılır.
+ */
+export function canonicalIdentityEmail(email: string): string {
+  // Sunucudaki `canonicalIdentityEmail` ile AYNI savunma: düz JS'ten null/undefined gelebilir ve
+  // burada patlamak kafa karıştırıcı bir iç hata verirdi. Boş girdi sessizce imzalanmaz — net hata
+  // `signIdentity`de üretilir (fail-closed orada, savunma burada).
+  email = String(email ?? '');
+  let start = 0;
+  let end = email.length;
+  while (start < end && IDENTITY_TRIM_BYTES.includes(email.charCodeAt(start))) start++;
+  while (end > start && IDENTITY_TRIM_BYTES.includes(email.charCodeAt(end - 1))) end--;
+  let out = '';
+  for (let i = start; i < end; i++) {
+    const code = email.charCodeAt(i);
+    // Vekil çiftler (>= 0xD800) bu aralığa hiç girmez; yarımlar sırayla eklenip aynen geri birleşir.
+    out += code >= 0x41 && code <= 0x5a ? String.fromCharCode(code + 0x20) : email[i];
+  }
+  return out;
+}
+
+/**
+ * Giriş yapmış kullanıcının e-postasını çalışma-alanına özel gizli anahtarla imzalar:
+ * HMAC-SHA256(canonicalIdentityEmail(email), secret), küçük harf hex. Widget bu imzayı taşıdığında
+ * ziyaretçinin kimliği doğrulanmış sayılır (aksi hâlde e-posta yalnızca kullanıcının iddiasıdır).
+ *
+ * Gizli anahtar tarayıcıya ASLA konmaz: imza yalnız sizin sunucunuzda üretilir ve sayfaya
+ * hazır hex olarak gömülür. Anahtar istemciye sızarsa herkes istediği kimliği taklit edebilir.
+ *
+ * @example
+ * // Sunucu tarafı — oturumdaki kullanıcı için:
+ * const signature = await signIdentity(session.user.email, process.env.NSUPP_IDENTITY_SECRET);
+ * // → sayfaya: window.$nsupp.push(['set', 'user:email', [session.user.email, signature]])
+ */
+export async function signIdentity(email: string, secret: string): Promise<string> {
+  // FAIL-CLOSED: boş e-posta imzalanmaz. `signIdentity('')` geçerli GÖRÜNEN bir hex döndürüyordu;
+  // geliştirici `signIdentity(user.email, S)` yazar, oturumda e-posta boşsa hiçbir yerde hata çıkmaz
+  // ve kimlik ASLA doğrulanmaz (sunucu e-postasız iddiayı zaten reddeder). Sessiz bir çıkmaz — tam
+  // olarak bu yardımcının önlemek için var olduğu hata sınıfı. Artık çağrı anında patlar.
+  const canonical = canonicalIdentityEmail(email);
+  if (!canonical) throw new Error('signIdentity: email is empty — nothing to sign. Read it from the logged-in session before calling.');
+  return hmacSha256Hex(secret, canonical);
+}
+
 export default NsuppRestClient;
