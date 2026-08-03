@@ -499,4 +499,79 @@ export async function signIdentity(email: string, secret: string): Promise<strin
   return hmacSha256Hex(secret, canonical);
 }
 
+/** Options for {@link signIdentityJwt}. */
+export interface SignIdentityJwtOptions {
+  /** Token lifetime in seconds (default 3600). Keep it short — this is the whole point of a JWT. */
+  ttlSeconds?: number;
+  /** Trusted display name. Unlike a name sent from the browser, this one is signed. */
+  name?: string;
+  /**
+   * Trusted visitor attributes (plan, segments, order count…). Keys starting with `$` or `_` are
+   * reserved for the server's own trust marks and are dropped — you cannot self-certify.
+   */
+  attributes?: Record<string, unknown>;
+  /** Override "now" in milliseconds. For tests only. */
+  nowMs?: number;
+}
+
+/**
+ * Sign a logged-in user's identity as a short-lived HS256 JWT.
+ *
+ * ── WHY PREFER THIS OVER {@link signIdentity} ─────────────────────────────────────────────────
+ * The plain HMAC signature is a pure function of the e-mail: it never expires and is not bound to
+ * a session or device. If it ever leaks, that person can be impersonated FOREVER, from anywhere,
+ * and the only way to revoke it is rotating the workspace secret — which breaks every user at
+ * once. A JWT carries `exp`, so a leaked token dies on its own.
+ *
+ * The second gain is trust: `name` and `attributes` inside the token are signed by YOUR backend.
+ * Attributes sent from the browser are only a claim — a verified visitor could still assert
+ * `segments: ['vip']` and jump the priority queue. Signed ones cannot be forged.
+ *
+ * Both formats are accepted while your workspace stays in `hmac` (transition) mode, so you can
+ * migrate page by page. Switch the workspace to `jwt` mode once you are done — that is what stops
+ * open-ended signatures from being accepted at all.
+ *
+ * @example
+ * const token = await signIdentityJwt(session.user.email, process.env.NSUPP_IDENTITY_SECRET, {
+ *   ttlSeconds: 900,
+ *   name: session.user.fullName,
+ *   attributes: { plan: 'enterprise', segments: ['vip'] },
+ * });
+ * // → window.$nsupp.push(['set', 'user:email', [session.user.email, token]])
+ */
+export async function signIdentityJwt(
+  email: string,
+  secret: string,
+  opts: SignIdentityJwtOptions = {},
+): Promise<string> {
+  // Same fail-closed rule as signIdentity: an empty e-mail produces a token that looks valid and
+  // never verifies, which is exactly the silent dead end this helper exists to prevent.
+  const canonical = canonicalIdentityEmail(email);
+  if (!canonical) throw new Error('signIdentityJwt: email is empty — nothing to sign. Read it from the logged-in session before calling.');
+  const now = Math.floor((opts.nowMs ?? Date.now()) / 1000);
+  const ttl = Math.max(1, Math.floor(opts.ttlSeconds ?? 3600));
+  const claims: Record<string, unknown> = { sub: canonical, iat: now, exp: now + ttl };
+  const name = typeof opts.name === 'string' ? opts.name.trim() : '';
+  if (name) claims.name = name;
+  if (opts.attributes) {
+    const attrs: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(opts.attributes)) {
+      const key = k.trim();
+      // Dropped rather than sent: the server rejects reserved prefixes anyway, and silently
+      // shipping a key that will be ignored is how "I set it and nothing happened" bugs start.
+      if (!key || key.startsWith('$') || key.startsWith('_') || v === undefined) continue;
+      attrs[key] = v;
+    }
+    if (Object.keys(attrs).length) claims.attributes = attrs;
+  }
+  const b64url = (s: string) => btoa(String.fromCharCode(...new TextEncoder().encode(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const signingInput = `${b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))}.${b64url(JSON.stringify(claims))}`;
+  const subtle = (globalThis as { crypto?: { subtle?: SubtleCrypto } }).crypto?.subtle;
+  if (!subtle) throw new Error('WebCrypto (crypto.subtle) unavailable — sign identity tokens on a Node 18+/worker runtime.');
+  const key = await subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = new Uint8Array(await subtle.sign('HMAC', key, new TextEncoder().encode(signingInput)));
+  const sigB64 = btoa(String.fromCharCode(...sig)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return `${signingInput}.${sigB64}`;
+}
+
 export default NsuppRestClient;

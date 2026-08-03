@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { createHmac } from 'node:crypto';
-import { NsuppRestClient, NsuppApiError, verifyWebhook, canonicalIdentityEmail, signIdentity } from './index';
+import { NsuppRestClient, NsuppApiError, verifyWebhook, canonicalIdentityEmail, signIdentity, signIdentityJwt } from './index';
 
 type Call = { url: string; method: string; headers: Record<string, string>; body?: string };
 
@@ -169,4 +169,47 @@ describe('signIdentity', () => {
       expect(await signIdentity(input, secret)).toBe(signature);
     });
   }
+});
+
+describe('signIdentityJwt', () => {
+  const secret = 'cof_idv_000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f';
+  const NOW = 1_800_000_000_000;
+  const decode = (t: string) => JSON.parse(Buffer.from(t.split('.')[1]!, 'base64url').toString('utf8')) as Record<string, unknown>;
+
+  it('kanonik sub + exp/iat taşır (süresizlik JWT’nin varlık sebebine aykırı)', async () => {
+    const p = decode(await signIdentityJwt('  Jane@Acme.COM ', secret, { ttlSeconds: 900, nowMs: NOW }));
+    expect(p.sub).toBe('jane@acme.com');
+    expect(p.iat).toBe(NOW / 1000);
+    expect(p.exp).toBe(NOW / 1000 + 900);
+  });
+
+  it('başlık HS256 ve imza GERÇEKTEN doğrulanır', async () => {
+    const tok = await signIdentityJwt('jane@acme.com', secret, { nowMs: NOW });
+    const [h, p, s] = tok.split('.');
+    expect(JSON.parse(Buffer.from(h!, 'base64url').toString('utf8'))).toEqual({ alg: 'HS256', typ: 'JWT' });
+    const { createHmac } = await import('node:crypto');
+    expect(s).toBe(createHmac('sha256', secret).update(`${h}.${p}`).digest('base64url'));
+  });
+
+  it('🔴 ayrılmış önekli öznitelikler İMZALANMAZ — müşteri kendi doğrulamasını onaylatamaz', async () => {
+    const p = decode(await signIdentityJwt('jane@acme.com', secret, {
+      nowMs: NOW,
+      attributes: { plan: 'plus', $verified: true, _internal: 1, ' ': 'x', bos: undefined },
+    }));
+    expect(p.attributes).toEqual({ plan: 'plus' });
+  });
+
+  it('ad kırpılır; boş ad hiç yazılmaz (boş iddia iddia değildir)', async () => {
+    expect(decode(await signIdentityJwt('a@b.co', secret, { nowMs: NOW, name: '  Jane  ' })).name).toBe('Jane');
+    expect(decode(await signIdentityJwt('a@b.co', secret, { nowMs: NOW, name: '   ' })).name).toBeUndefined();
+  });
+
+  it('FAIL-CLOSED: boş e-posta imzalanmaz (sessiz çıkmaz yerine net hata)', async () => {
+    await expect(signIdentityJwt('   ', secret)).rejects.toThrow(/email is empty/);
+  });
+
+  it('ttl en az 1 saniye — 0/negatif ttl doğduğu anda ölü token üretirdi', async () => {
+    const p = decode(await signIdentityJwt('a@b.co', secret, { nowMs: NOW, ttlSeconds: 0 }));
+    expect((p.exp as number) - (p.iat as number)).toBe(1);
+  });
 });
