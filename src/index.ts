@@ -45,7 +45,7 @@ function base64(s: string): string {
   if (typeof btoa === 'function') return btoa(s);
   const B = (globalThis as { Buffer?: { from(s: string, enc: string): { toString(enc: string): string } } }).Buffer;
   if (B) return B.from(s, 'utf8').toString('base64');
-  throw new Error('base64 encoder bulunamadı');
+  throw new Error('no base64 encoder available');
 }
 
 const enc = encodeURIComponent;
@@ -73,13 +73,13 @@ export class NsuppRestClient {
   readonly defaultWebsiteId?: string;
 
   constructor(opts: NsuppRestOptions) {
-    if (!opts || !opts.identifier || !opts.secret) throw new Error('NsuppRestClient: identifier ve secret gerekli');
+    if (!opts || !opts.identifier || !opts.secret) throw new Error('NsuppRestClient: identifier and secret are required');
     this.baseUrl = (opts.baseUrl ?? 'https://api.nsupp.com/cof').replace(/\/$/, '');
     this.authHeader = 'Basic ' + base64(`${opts.identifier}:${opts.secret}`);
     this.tier = opts.tier ?? 'plugin';
     this.defaultWebsiteId = opts.websiteId;
     const f = opts.fetch ?? (typeof fetch !== 'undefined' ? fetch : undefined);
-    if (!f) throw new Error('NsuppRestClient: global fetch yok — opts.fetch verin');
+    if (!f) throw new Error('NsuppRestClient: no global fetch — pass opts.fetch');
     this.doFetch = f;
   }
 
@@ -119,7 +119,7 @@ export class NsuppRestClient {
   /** Bir web sitesine (public key) sabitlenmiş tipli kapsam. */
   website(websiteId?: string): WebsiteScope {
     const id = websiteId ?? this.defaultWebsiteId;
-    if (!id) throw new Error('website(): websiteId gerekli (veya opts.websiteId verin)');
+    if (!id) throw new Error('website(): websiteId is required (or set opts.websiteId)');
     return new WebsiteScope(this, id);
   }
 }
