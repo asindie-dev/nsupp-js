@@ -270,8 +270,12 @@ export class WebsiteScope {
    * Ekibin GENEL kanalını oku. KAPSAM BİLEREK DAR: özel gruplar ve birebir mesajlar API'de YOKTUR —
    * o kanalların üyeliği KİŞİ kimliğine bağlıdır, API anahtarının arkasında kişi yoktur.
    * Silinen mesaj yerinde kalır (`content: ''`, `deleted: true`) — akışta delik açılmaz.
+   *
+   * Sayfalama imleci ISO DAMGADIR (opak jeton değil): `after` İLERİ yürür (poll), `before` GERİYE
+   * yürür (geçmiş). Bir sonraki `before` = önceki sayfanın EN ESKİ `created_at`i; sayfa `limit`ten
+   * kısaysa başa ulaşılmıştır.
    */
-  listTeamChatMessages<T = unknown>(query?: { after?: string; limit?: number }): Promise<T> {
+  listTeamChatMessages<T = unknown>(query?: { after?: string; before?: string; limit?: number }): Promise<T> {
     return this.request('GET', '/team-chat', { query: query as RequestOptions['query'] });
   }
   /**
