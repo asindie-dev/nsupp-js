@@ -287,6 +287,92 @@ export class WebsiteScope {
     return this.request('POST', '/team-chat', { body: { content } });
   }
 
+  /**
+   * Bir KANALA yaz — uygulaman o kanalın ÜYESİ olmalıdır (`not_in_channel` yoksa). Genel kanal tek
+   * istisnadır: orada üyelik örtüktür. `website:team:chat:public` scope'un varsa AÇIK kanallara
+   * üyeliksiz de yazabilirsin; özel kanal yine üyelik ister.
+   *
+   * `blocks` ile düğme koyabilirsin; tıklama, uygulamanın Etkileşim URL'ine `payload=<JSON>` olarak
+   * gelir. `postAt` verirsen mesaj kuyruğa girer (en çok 120 gün) ve `scheduled_id` döner.
+   * Kanal başına yaklaşık saniyede bir yazma sınırı vardır; aşarsan 429 + `Retry-After` gelir.
+   */
+  postTeamChannelMessage<T = unknown>(
+    channelId: string,
+    body: {
+      content?: string;
+      blocks?: unknown[];
+      attachments?: Array<{ type: string; name?: string; url?: string }>;
+      postAt?: string | number;
+    },
+  ): Promise<T> {
+    const { postAt, ...rest } = body;
+    return this.request('POST', `/team-chat/channels/${enc(channelId)}/messages`, {
+      body: { ...rest, ...(postAt !== undefined ? { post_at: postAt } : {}) },
+    });
+  }
+  /**
+   * Bir KİŞİYE uygulama olarak DM yaz. Slack bunu iki çağrıda yapar (`conversations.open` +
+   * `chat.postMessage`); burada tek çağrı yeter, çünkü DM kimliği ÜYE KÜMESİNDEN türer.
+   * Bota DM yazılamaz (iki otomasyon birbirine yanıt verirse bu bir döngüdür, özellik değil).
+   */
+  sendTeamDirectMessage<T = unknown>(userId: string, content: string, blocks?: unknown[]): Promise<T> {
+    return this.request('POST', '/team-chat/dm', { body: { user_id: userId, content, ...(blocks ? { blocks } : {}) } });
+  }
+  /**
+   * YALNIZ BİR KİŞİNİN gördüğü mesaj (Slack `chat.postEphemeral`). İki taraf da kanalda olmalıdır:
+   * göremediği bir kanalın İÇİNDE birine mesaj göstermek, o kanalın varlığını sızdırırdı.
+   */
+  postTeamEphemeral<T = unknown>(channelId: string, userId: string, content: string): Promise<T> {
+    return this.request('POST', `/team-chat/channels/${enc(channelId)}/ephemeral`, { body: { user_id: userId, content } });
+  }
+  /** KENDİ yazdığın mesajı düzenle. Başkasının mesajı 403 — bir otomasyon insanın sözünü değiştiremez. */
+  updateTeamChatMessage<T = unknown>(messageId: string, content: string): Promise<T> {
+    return this.request('PATCH', `/team-chat/${enc(messageId)}`, { body: { content } });
+  }
+  /** KENDİ mesajını sil. Arşivli kanalda düzenleme kapalıdır ama silme açıktır. */
+  deleteTeamChatMessage<T = unknown>(messageId: string): Promise<T> {
+    return this.request('DELETE', `/team-chat/${enc(messageId)}`);
+  }
+  /**
+   * Tıklamadan gelen `trigger_id` ile bir pencere aç. Tetikleyici GÖNDERİLDİKTEN 3 SANİYE sonra
+   * ölür: `views.open`ı, tıklamayı 200 ile yanıtlamadan ÖNCE çağır.
+   * Pencerenin içeriği SENİN sayfandır (iframe), bir görünüm JSON'u değil.
+   */
+  openTeamView<T = unknown>(triggerId: string, view: { url: string; title?: string }): Promise<T> {
+    return this.request('POST', '/team-chat/views/open', { body: { trigger_id: triggerId, view } });
+  }
+  /**
+   * Bir kişinin App Home sekmesini yayınla (Slack `views.publish`). Görünüm KİŞİ BAŞINADIR ve en
+   * çok 100 blok taşır; boş bir `blocks` dizisi sekmeyi temizler.
+   */
+  publishTeamAppHome<T = unknown>(userId: string, blocks: unknown[]): Promise<T> {
+    return this.request('POST', '/team-chat/views/publish', { body: { user_id: userId, view: { type: 'home', blocks } } });
+  }
+  /** Ekip mesajlarında ara (çok kanallı; sonuç hangi kanalda olduğunu taşır). */
+  searchTeamChat<T = unknown>(query: { q: string; limit?: number }): Promise<T> {
+    return this.request('GET', '/team-chat/search', { query: query as RequestOptions['query'] });
+  }
+  /** Bir mesajın thread yanıtları. */
+  listTeamChatReplies<T = unknown>(messageId: string): Promise<T> {
+    return this.request('GET', `/team-chat/${enc(messageId)}/replies`);
+  }
+  /** Thread'e yanıt yaz. */
+  postTeamChatReply<T = unknown>(messageId: string, content: string): Promise<T> {
+    return this.request('POST', `/team-chat/${enc(messageId)}/replies`, { body: { content } });
+  }
+  /** Tepki ekle/kaldır. Emoji KODU gönder (`white_check_mark`), karakter değil. */
+  reactToTeamChatMessage<T = unknown>(messageId: string, emoji: string): Promise<T> {
+    return this.request('POST', `/team-chat/${enc(messageId)}/reactions`, { body: { emoji } });
+  }
+  /** Mesajı sabitle / sabitlemeyi kaldır. */
+  pinTeamChatMessage<T = unknown>(messageId: string): Promise<T> {
+    return this.request('POST', `/team-chat/${enc(messageId)}/pin`);
+  }
+  /** Mesajı başka bir kanala ilet. */
+  forwardTeamChatMessage<T = unknown>(messageId: string, note?: string): Promise<T> {
+    return this.request('POST', `/team-chat/${enc(messageId)}/forward`, { body: note ? { note } : {} });
+  }
+
   // ── Kişisel veri paylaşımı (0179) — scope: website:disclosure ──
   /**
    * Operatör bu görüşmede müşteriyi doğruladı mı ve hangi siparişler paylaşılabilir?
