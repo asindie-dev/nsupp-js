@@ -153,8 +153,18 @@ export class WebsiteScope {
   createConversation<T = unknown>(body: unknown): Promise<T> {
     return this.request('POST', '/conversation', { body });
   }
-  getMessages<T = unknown>(sessionId: string): Promise<T> {
-    return this.request('GET', `/conversation/${enc(sessionId)}/messages`);
+  /**
+   * Bir konuşmanın mesajları (eskiden yeniye). Sayfalama imleci ÇİFTTİR: `before` = aldığın en
+   * ESKİ mesajın `timestamp`i, `before_id` = aynı mesajın `fingerprint`i. İkisini birlikte gönder
+   * — yalnız damga gönderirsen aynı milisaniyeyi paylaşan mesajlar ATLANIR.
+   */
+  getMessages<T = unknown>(
+    sessionId: string,
+    query?: { limit?: number | string; before?: string; before_id?: string },
+  ): Promise<T> {
+    return this.request('GET', `/conversation/${enc(sessionId)}/messages`, {
+      query: query as RequestOptions['query'],
+    });
   }
   sendMessage<T = unknown>(sessionId: string, content: string, attachments?: unknown[]): Promise<T> {
     return this.request('POST', `/conversation/${enc(sessionId)}/message`, { body: { content, ...(attachments ? { attachments } : {}) } });
