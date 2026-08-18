@@ -348,6 +348,25 @@ export class WebsiteScope {
   publishTeamAppHome<T = unknown>(userId: string, blocks: unknown[]): Promise<T> {
     return this.request('POST', '/team-chat/views/publish', { body: { user_id: userId, view: { type: 'home', blocks } } });
   }
+  /**
+   * Uygulamanın görebildiği ekip kanallarını listele (Slack `conversations.list` karşılığı).
+   *
+   * GÖRÜNÜRLÜK: üyesi olduğun her kanal + genel kanal (üyelik örtük) + `website:team:chat:public`
+   * onaylıysa açık kanallar. Birebir/özel mesajlar (DM) HİÇBİR koşulda listelenmez.
+   * Arşivli kanal varsayılan olarak LİSTEDE kalır (`exclude_archived: true` ile süzülür) —
+   * "bu kanal kapandı" diyebilmen için onu görmen gerekir.
+   *
+   * Sayfalama imleci ÇİFTTİR: `after` = önceki sayfanın son satırının `created_at`i, `after_id`
+   * = aynı satırın `channel_id`si. İkisini birlikte gönder — yalnız damga gönderirsen aynı
+   * milisaniyede kurulmuş kanallar atlanır. Sayfa `limit`ten kısaysa liste bitmiştir.
+   */
+  listTeamChatChannels<T = unknown>(query?: { after?: string; after_id?: string; limit?: number; exclude_archived?: boolean }): Promise<T> {
+    return this.request('GET', '/team-chat/channels', { query: query as RequestOptions['query'] });
+  }
+  /** Tek bir ekip kanalının bilgisi (Slack `conversations.info`). Göremediğin kanal 404'tür. */
+  getTeamChatChannel<T = unknown>(channelId: string): Promise<T> {
+    return this.request('GET', `/team-chat/channels/${enc(channelId)}`);
+  }
   /** Ekip mesajlarında ara (çok kanallı; sonuç hangi kanalda olduğunu taşır). */
   searchTeamChat<T = unknown>(query: { q: string; limit?: number }): Promise<T> {
     return this.request('GET', '/team-chat/search', { query: query as RequestOptions['query'] });
