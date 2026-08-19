@@ -31,6 +31,18 @@ describe('@nsupp/rest-sdk', () => {
     expect(m.calls[0]!.url).toBe('https://api.nsupp.com/cof/v1/website/pk1');
   });
 
+  it('🔴🔴 OAuth KULLANICI JETONU: `Bearer` gönderilir ve `X-Cof-Tier` GÖNDERİLMEZ (RFC 6750)', async () => {
+    const m = mockFetch([{ status: 200, json: { error: false, data: [] } }]);
+    const c = new NsuppRestClient({ accessToken: 'ut_abc', fetch: m.fn });
+    await c.request('GET', '/v1/website/pk1/team-chat/channels');
+    expect(m.calls[0]!.headers.Authorization).toBe('Bearer ut_abc');
+    // 🔴 Şema kimlik bilgisinin cinsini ZATEN söyler; ayrıca bize özel bir başlık istemek,
+    //    hiçbir hazır OAuth istemcisinin gönderemeyeceği bir şey istemek olurdu.
+    expect(m.calls[0]!.headers['X-Cof-Tier'], '🔴 Bearer ile tier başlığı gönderildi').toBeUndefined();
+    // 🔴 İKİ KİMLİK BİLGİSİNDEN BİRİ ZORUNLU: hiçbiri yoksa istemci KURULMAZ (sessiz anonim çağrı yok).
+    expect(() => new NsuppRestClient({ fetch: m.fn } as never)).toThrow();
+  });
+
   it('hata zarfı → NsuppApiError (reason+code+status)', async () => {
     const m = mockFetch([{ status: 403, json: { error: true, reason: 'scope denied', code: 'scope_denied' } }]);
     const c = new NsuppRestClient({ ...base, fetch: m.fn });

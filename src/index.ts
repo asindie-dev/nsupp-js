@@ -8,10 +8,22 @@
 export type Tier = 'plugin' | 'website';
 
 export interface NsuppRestOptions {
-  /** Plugin token identifier (nsupp_pk_… / nsupp_wt_…). */
-  identifier: string;
-  /** Token secret (bir kez gösterilir). */
-  secret: string;
+  /**
+   * Plugin token identifier (nsupp_pk_… / nsupp_wt_…). Omit when you authenticate with a USER
+   * access token (`accessToken`) obtained through the OAuth authorization-code flow.
+   */
+  identifier?: string;
+  /** Token secret (shown once). Omit when using `accessToken`. */
+  secret?: string;
+  /**
+   * OAuth USER access token (`POST /v1/oauth/token`). Sent as `Authorization: Bearer …` per
+   * RFC 6750, and NO `X-Cof-Tier` header is sent — the Bearer scheme already says what the
+   * credential is, and requiring a proprietary header would break every standard OAuth client.
+   * A user token reaches only the workspaces the consenting person belongs to AND your app is
+   * installed in, carries the scopes that person consented to, and stops working the moment
+   * they revoke your app.
+   */
+  accessToken?: string;
   /** Tier — GET/HEAD=read, aksi=write yetkisi bu tier'a göre değerlendirilir. Varsayılan 'plugin'. */
   tier?: Tier;
   /** API kökü. Varsayılan 'https://api.nsupp.com/cof'. Kendi kurulumunuz için override edin. */
@@ -72,10 +84,14 @@ export class NsuppRestClient {
   private readonly doFetch: typeof fetch;
   readonly defaultWebsiteId?: string;
 
+  private readonly bearer: boolean;
+
   constructor(opts: NsuppRestOptions) {
-    if (!opts || !opts.identifier || !opts.secret) throw new Error('NsuppRestClient: identifier and secret are required');
+    if (!opts || (!opts.accessToken && (!opts.identifier || !opts.secret)))
+      throw new Error('NsuppRestClient: pass either accessToken (OAuth user token) or identifier + secret');
     this.baseUrl = (opts.baseUrl ?? 'https://api.nsupp.com/cof').replace(/\/$/, '');
-    this.authHeader = 'Basic ' + base64(`${opts.identifier}:${opts.secret}`);
+    this.bearer = !!opts.accessToken;
+    this.authHeader = opts.accessToken ? 'Bearer ' + opts.accessToken : 'Basic ' + base64(`${opts.identifier}:${opts.secret}`);
     this.tier = opts.tier ?? 'plugin';
     this.defaultWebsiteId = opts.websiteId;
     const f = opts.fetch ?? (typeof fetch !== 'undefined' ? fetch : undefined);
@@ -93,7 +109,10 @@ export class NsuppRestClient {
       if (s) url += (url.includes('?') ? '&' : '?') + s;
     }
     const upper = method.toUpperCase();
-    const headers: Record<string, string> = { Authorization: this.authHeader, 'X-Cof-Tier': opts.tier ?? this.tier };
+    // 🔴 Bearer'da tier başlığı GÖNDERİLMEZ: kimlik bilgisinin cinsini şemanın kendisi söyler.
+    const headers: Record<string, string> = this.bearer
+      ? { Authorization: this.authHeader }
+      : { Authorization: this.authHeader, 'X-Cof-Tier': opts.tier ?? this.tier };
     const hasBody = opts.body !== undefined && upper !== 'GET' && upper !== 'HEAD';
     if (hasBody) headers['Content-Type'] = 'application/json';
     const res = await this.doFetch(url, { method: upper, headers, body: hasBody ? JSON.stringify(opts.body) : undefined });
