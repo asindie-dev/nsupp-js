@@ -587,6 +587,32 @@ export class WebsiteScope {
   revokeTeamFilePublicLink<T = unknown>(fileId: string): Promise<T> {
     return this.request('DELETE', `/team-chat/files/${encodeURIComponent(fileId)}/public`);
   }
+  /**
+   * Edits a canvas SECTION BY SECTION instead of replacing the whole body.
+   *
+   * This is how you avoid the read-modify-write race: with a full-body write, anything a
+   * colleague changed between your read and your write is silently overwritten. Here you name
+   * only the block you are touching.
+   *
+   * Changes are applied IN ORDER, each on the result of the previous one, and it is ALL OR
+   * NOTHING — if one change fails, none are applied, because a half-edited document is a state
+   * you never asked for and cannot undo.
+   *
+   * Operations: insert_at_start · insert_at_end · insert_before · insert_after · replace ·
+   * delete. The last four need a `section_id` — use `lookupTeamCanvasSections` to find one.
+   */
+  editTeamCanvas<T = unknown>(docId: string, body: { changes: Array<{ operation: string; section_id?: string; blocks?: unknown[] }> }): Promise<T> {
+    return this.request('POST', `/team-chat/docs/${encodeURIComponent(docId)}/edit`, { body });
+  }
+  /**
+   * Finds sections (blocks) by type and/or text. The ids it returns are exactly what
+   * `editTeamCanvas` takes as `section_id`, so the two together give you find-and-replace.
+   * An unknown type is an error, not an empty result: a typo must not look like "nothing here".
+   */
+  lookupTeamCanvasSections<T = unknown>(docId: string, q?: { section_types?: string; contains_text?: string }): Promise<T> {
+    const qs = new URLSearchParams(Object.entries(q ?? {}).filter(([, v]) => !!v) as [string, string][]).toString();
+    return this.request('GET', `/team-chat/docs/${encodeURIComponent(docId)}/sections${qs ? `?${qs}` : ''}`);
+  }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
   listTeamLists<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/lists');
