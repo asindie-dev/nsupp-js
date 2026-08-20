@@ -372,7 +372,14 @@ export class WebsiteScope {
    * (assigned / recent / starred) are refused with `nav_requires_person` — an app token has no
    * person behind it, and an empty array would read as "you have none".
    */
-  listTeamFiles<T = unknown>(query?: { nav?: 'all' | 'lists' | 'canvases'; limit?: number; after?: string; after_id?: string }): Promise<T> {
+  listTeamFiles<T = unknown>(query?: {
+    nav?: 'all' | 'lists' | 'canvases';
+    /** Comma-separated kinds. Narrows, and combines with `nav` — an empty intersection returns nothing. */
+    types?: string;
+    limit?: number;
+    after?: string;
+    after_id?: string;
+  }): Promise<T> {
     return this.request('GET', '/team-chat/files', { query });
   }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
