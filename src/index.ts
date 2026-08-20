@@ -395,6 +395,14 @@ export class WebsiteScope {
     return this.request('GET', '/team-chat/files', { query });
   }
   /**
+   * Creates a canvas. There is NO "create a file" call: the files plane is a union (lists +
+   * canvases + attachments), so you create a canvas — or a list, which has its own endpoint.
+   * Pass `channel_id` to hang it on a channel tab; the channel must be visible to your app.
+   */
+  createTeamCanvas<T = unknown>(body?: { title?: string; body?: { id: string; type: string; text?: string }[]; channel_id?: string }): Promise<T> {
+    return this.request('POST', '/team-chat/docs', { body: body ?? {} });
+  }
+  /**
    * Reads a canvas. THE BODY IS AN ARRAY OF BLOCKS, not one blob of HTML: each block keeps a
    * stable `id` because comments and reactions attach to a block, not to a character offset.
    */
