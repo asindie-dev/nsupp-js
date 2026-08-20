@@ -499,6 +499,16 @@ export class WebsiteScope {
   getTeamFile<T = unknown>(fileId: string): Promise<T> {
     return this.request('GET', `/team-chat/files/${encodeURIComponent(fileId)}`);
   }
+  /**
+   * The built-in canvas templates, with their bodies already resolved to English text — pass a
+   * body straight to `createTeamCanvas`. Titles and bodies are English on purpose: this is the
+   * developer surface, and an integration cannot be expected to resolve an eight-language key
+   * catalogue. Templates live in code, not in your account, so every workspace sees the same
+   * set and nobody can delete one by accident.
+   */
+  listTeamCanvasTemplates<T = unknown>(): Promise<T> {
+    return this.request('GET', '/team-chat/templates');
+  }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
   listTeamLists<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/lists');
