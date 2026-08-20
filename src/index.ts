@@ -367,8 +367,12 @@ export class WebsiteScope {
    *
    * Newest first. Page with `after` + `after_id` (the last row's `updated_at` and `file_id`);
    * a page shorter than `limit` means you reached the end.
+   *
+   * `nav` picks a sub-view: `all` (default), `lists`, `canvases`. The per-person views
+   * (assigned / recent / starred) are refused with `nav_requires_person` — an app token has no
+   * person behind it, and an empty array would read as "you have none".
    */
-  listTeamFiles<T = unknown>(query?: { limit?: number; after?: string; after_id?: string }): Promise<T> {
+  listTeamFiles<T = unknown>(query?: { nav?: 'all' | 'lists' | 'canvases'; limit?: number; after?: string; after_id?: string }): Promise<T> {
     return this.request('GET', '/team-chat/files', { query });
   }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
