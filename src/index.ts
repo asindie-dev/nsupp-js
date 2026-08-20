@@ -571,7 +571,7 @@ export class WebsiteScope {
   /** Partial patch: an omitted field is untouched. `todo_mode: true` ensures the three to-do columns exist. */
   updateTeamList<T = unknown>(
     listId: string,
-    patch: { title?: string; description?: string | null; todo_mode?: boolean },
+    patch: { title?: string; description?: string | null; todo_mode?: boolean; is_template?: boolean },
   ): Promise<T> {
     return this.request('PATCH', `/team-chat/lists/${encodeURIComponent(listId)}`, { body: patch });
   }
