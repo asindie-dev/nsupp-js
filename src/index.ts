@@ -538,6 +538,13 @@ export class WebsiteScope {
     const res = await fetch(uploadUrl, { method: 'PUT', body: bytes as BodyInit });
     return (await res.json()) as T;
   }
+  /** Partial patch: an omitted field is untouched. `todo_mode: true` ensures the three to-do columns exist. */
+  updateTeamList<T = unknown>(
+    listId: string,
+    patch: { title?: string; description?: string | null; todo_mode?: boolean },
+  ): Promise<T> {
+    return this.request('PATCH', `/team-chat/lists/${encodeURIComponent(listId)}`, { body: patch });
+  }
   /** Who a list is open to, plus its access level. Lists and canvases run through ONE permission rule. */
   getTeamListShares<T = unknown>(listId: string): Promise<T> {
     return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/shares`);
