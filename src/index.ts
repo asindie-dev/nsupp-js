@@ -554,6 +554,12 @@ export class WebsiteScope {
   getTeamAssignedItems<T = unknown>(userId: string): Promise<T> {
     return this.request('GET', `/team-chat/lists/assigned?user_id=${encodeURIComponent(userId)}`);
   }
+  /** Archives a row or restores it. NOT a delete — the row stays and comes back with false. */
+  setTeamListItemArchived<T = unknown>(listId: string, itemId: string, archived: boolean): Promise<T> {
+    return this.request('PUT', `/team-chat/lists/${encodeURIComponent(listId)}/items/${encodeURIComponent(itemId)}/archived`, {
+      body: { archived },
+    });
+  }
   /** The list's columns. Rows are keyed by column ID — without this you cannot interpret them. */
   getTeamListFields<T = unknown>(listId: string): Promise<T> {
     return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/fields`);
