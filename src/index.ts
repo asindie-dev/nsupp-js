@@ -538,6 +538,18 @@ export class WebsiteScope {
     const res = await fetch(uploadUrl, { method: 'PUT', body: bytes as BodyInit });
     return (await res.json()) as T;
   }
+  /** Creates a SHARED view (everyone with list access sees it). Name refused above 60 chars. */
+  createTeamListView<T = unknown>(listId: string, body: { name: string; layout?: string; group_by?: string | null }): Promise<T> {
+    return this.request('POST', `/team-chat/lists/${encodeURIComponent(listId)}/views`, { body });
+  }
+  /** Partial patch. `group_by: null` CLEARS grouping; an omitted key leaves it alone. */
+  updateTeamListView<T = unknown>(listId: string, viewId: string, patch: Record<string, unknown>): Promise<T> {
+    return this.request('PATCH', `/team-chat/lists/${encodeURIComponent(listId)}/views/${encodeURIComponent(viewId)}`, { body: patch });
+  }
+  /** Deletes a view. Rows are untouched — a view is a lens, never a container. */
+  deleteTeamListView<T = unknown>(listId: string, viewId: string): Promise<T> {
+    return this.request('DELETE', `/team-chat/lists/${encodeURIComponent(listId)}/views/${encodeURIComponent(viewId)}`);
+  }
   /** The list's views with their own item counts. Counts are computed, never stored. */
   getTeamListViews<T = unknown>(listId: string): Promise<T> {
     return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/views`);
