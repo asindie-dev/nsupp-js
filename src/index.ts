@@ -488,6 +488,17 @@ export class WebsiteScope {
   deleteTeamCanvas<T = unknown>(docId: string): Promise<T> {
     return this.request('DELETE', `/team-chat/docs/${encodeURIComponent(docId)}`);
   }
+  /**
+   * Details of one file — the card behind the ⓘ button. Visibility comes from the FILES PLANE
+   * itself: a file you cannot see is not in the plane, so it answers 404 rather than 403.
+   *
+   * There is no `size` and no `sha`, and that is deliberate rather than missing: the plane does
+   * not store them, and a canvas or a list has no bytes at all — one is a block array, the
+   * other a set of rows. Returning 0 would tell you we measured and found nothing.
+   */
+  getTeamFile<T = unknown>(fileId: string): Promise<T> {
+    return this.request('GET', `/team-chat/files/${encodeURIComponent(fileId)}`);
+  }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
   listTeamLists<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/lists');
