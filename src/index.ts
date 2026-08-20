@@ -564,6 +564,14 @@ export class WebsiteScope {
   getTeamListFields<T = unknown>(listId: string): Promise<T> {
     return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/fields`);
   }
+  /** Version history, newest first. Snapshots are NOT carried here — fetch one version for them. */
+  getTeamListVersions<T = unknown>(listId: string): Promise<T> {
+    return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/versions`);
+  }
+  /** One version with its full snapshot: columns and rows TOGETHER (archived rows included). */
+  getTeamListVersion<T = unknown>(listId: string, versionId: string): Promise<T> {
+    return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/versions/${encodeURIComponent(versionId)}`);
+  }
   /** The list's views with their own item counts. Counts are computed, never stored. */
   getTeamListViews<T = unknown>(listId: string): Promise<T> {
     return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/views`);
