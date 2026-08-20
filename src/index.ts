@@ -397,6 +397,14 @@ export class WebsiteScope {
   updateTeamCanvas<T = unknown>(docId: string, body: { title?: string; body?: { id: string; type: string; text?: string }[] }): Promise<T> {
     return this.request('PUT', `/team-chat/docs/${encodeURIComponent(docId)}`, { body });
   }
+  /**
+   * Opens a canvas to a channel. Your app can only share with a CHANNEL, never with a person:
+   * a person-share decides something on that person's behalf and there is no person behind an
+   * API key. You need edit access yourself, and the channel must already be visible to you.
+   */
+  shareTeamCanvas<T = unknown>(docId: string, body: { channel_id: string; can_edit?: boolean }): Promise<T> {
+    return this.request('POST', `/team-chat/docs/${encodeURIComponent(docId)}/shares`, { body });
+  }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
   listTeamLists<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/lists');
