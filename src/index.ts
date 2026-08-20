@@ -473,6 +473,21 @@ export class WebsiteScope {
   getTeamCanvasVersion<T = unknown>(docId: string, versionId: string): Promise<T> {
     return this.request('GET', `/team-chat/docs/${encodeURIComponent(docId)}/versions/${encodeURIComponent(versionId)}`);
   }
+  /**
+   * Copies a canvas into a NEW, independent document. Seeing it is enough — a copy never
+   * changes the source. Shares, access level, template flag, channel and cover are NOT carried
+   * over: the copy is yours and is open to nobody. Emits team:file:created.
+   */
+  copyTeamCanvas<T = unknown>(docId: string): Promise<T> {
+    return this.request('POST', `/team-chat/docs/${encodeURIComponent(docId)}/copy`);
+  }
+  /**
+   * Deletes a canvas. Requires edit access and cannot be undone: comments, reactions, versions,
+   * shares and stars go with it. Emits team:doc:deleted.
+   */
+  deleteTeamCanvas<T = unknown>(docId: string): Promise<T> {
+    return this.request('DELETE', `/team-chat/docs/${encodeURIComponent(docId)}`);
+  }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
   listTeamLists<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/lists');
