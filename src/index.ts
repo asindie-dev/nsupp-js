@@ -398,6 +398,14 @@ export class WebsiteScope {
     return this.request('PUT', `/team-chat/docs/${encodeURIComponent(docId)}`, { body });
   }
   /**
+   * Copies a TEMPLATE canvas into a new, independent canvas. The title and blocks are copied and
+   * nothing else: shares are not carried over (that would publish your draft into rooms you never
+   * chose), the access level resets, and the copy is not itself a template.
+   */
+  useTeamCanvasTemplate<T = unknown>(docId: string): Promise<T> {
+    return this.request('POST', `/team-chat/docs/${encodeURIComponent(docId)}/use-template`);
+  }
+  /**
    * Opens a canvas to a channel. Your app can only share with a CHANNEL, never with a person:
    * a person-share decides something on that person's behalf and there is no person behind an
    * API key. You need edit access yourself, and the channel must already be visible to you.
