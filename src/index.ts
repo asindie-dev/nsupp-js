@@ -538,6 +538,10 @@ export class WebsiteScope {
     const res = await fetch(uploadUrl, { method: 'PUT', body: bytes as BodyInit });
     return (await res.json()) as T;
   }
+  /** The list's views with their own item counts. Counts are computed, never stored. */
+  getTeamListViews<T = unknown>(listId: string): Promise<T> {
+    return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/views`);
+  }
   /** Partial patch: an omitted field is untouched. `todo_mode: true` ensures the three to-do columns exist. */
   updateTeamList<T = unknown>(
     listId: string,
