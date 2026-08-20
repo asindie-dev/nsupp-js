@@ -570,6 +570,23 @@ export class WebsiteScope {
   deleteTeamListItems<T = unknown>(listId: string, body: { item_ids: string[] }): Promise<T> {
     return this.request('POST', `/team-chat/lists/${encodeURIComponent(listId)}/items/delete`, { body });
   }
+  /**
+   * Turns a file into a PUBLIC link that anyone holding it can open — no login, no token.
+   *
+   * The link points at our gateway, never at the raw storage address. That is what makes
+   * revoking real: revoke deletes the token and the gateway starts answering 404. Handing out
+   * the raw address instead would be an exposure you could never take back.
+   *
+   * Idempotent: asking twice returns the SAME link, so a link you already shared keeps working.
+   * Only files with bytes can be shared — a list or a canvas has nothing to download.
+   */
+  shareTeamFilePublicly<T = unknown>(fileId: string): Promise<T> {
+    return this.request('POST', `/team-chat/files/${encodeURIComponent(fileId)}/public`);
+  }
+  /** Revokes the public link. The gateway answers 404 afterwards — the link truly stops working. */
+  revokeTeamFilePublicLink<T = unknown>(fileId: string): Promise<T> {
+    return this.request('DELETE', `/team-chat/files/${encodeURIComponent(fileId)}/public`);
+  }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
   listTeamLists<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/lists');
