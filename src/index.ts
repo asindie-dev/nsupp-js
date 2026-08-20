@@ -613,6 +613,15 @@ export class WebsiteScope {
     const qs = new URLSearchParams(Object.entries(q ?? {}).filter(([, v]) => !!v) as [string, string][]).toString();
     return this.request('GET', `/team-chat/docs/${encodeURIComponent(docId)}/sections${qs ? `?${qs}` : ''}`);
   }
+  /**
+   * Deletes a file. The files plane is a UNION, so deletion is dispatched by kind: a message
+   * attachment is removed from the message it lives in (the message itself stays), while a
+   * canvas or a list is deleted through its OWN endpoint — asking here answers 400 and tells
+   * you which endpoint to use. Any public link on the file is revoked with it.
+   */
+  deleteTeamFile<T = unknown>(fileId: string): Promise<T> {
+    return this.request('DELETE', `/team-chat/files/${encodeURIComponent(fileId)}`);
+  }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
   listTeamLists<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/lists');
