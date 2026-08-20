@@ -460,6 +460,19 @@ export class WebsiteScope {
   commentOnTeamCanvasBlock<T = unknown>(docId: string, blockId: string, body: { body: string }): Promise<T> {
     return this.request('POST', `/team-chat/docs/${encodeURIComponent(docId)}/blocks/${encodeURIComponent(blockId)}/comments`, { body });
   }
+  /**
+   * Version history of a canvas, newest first. The list carries NO bodies — ten full bodies
+   * would make opening the history more expensive than opening the document. Fetch the one you
+   * need with `getTeamCanvasVersion`. A version with `restored_from` set is a restore, and that
+   * is the audit trail: who went back to which version, visible in the history itself.
+   */
+  listTeamCanvasVersions<T = unknown>(docId: string): Promise<T> {
+    return this.request('GET', `/team-chat/docs/${encodeURIComponent(docId)}/versions`);
+  }
+  /** One version, with its full body. */
+  getTeamCanvasVersion<T = unknown>(docId: string, versionId: string): Promise<T> {
+    return this.request('GET', `/team-chat/docs/${encodeURIComponent(docId)}/versions/${encodeURIComponent(versionId)}`);
+  }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
   listTeamLists<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/lists');
