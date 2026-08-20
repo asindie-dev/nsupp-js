@@ -564,6 +564,18 @@ export class WebsiteScope {
   getTeamListFields<T = unknown>(listId: string): Promise<T> {
     return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/fields`);
   }
+  /** A row's comment thread, oldest first (a conversation reads forward). */
+  getTeamItemComments<T = unknown>(listId: string, itemId: string): Promise<T> {
+    return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/items/${encodeURIComponent(itemId)}/comments`);
+  }
+  /** Comments on a ROW (never a cell). Empty is refused; cap 2000 — same as canvas comments. */
+  addTeamItemComment<T = unknown>(listId: string, itemId: string, body: string): Promise<T> {
+    return this.request('POST', `/team-chat/lists/${encodeURIComponent(listId)}/items/${encodeURIComponent(itemId)}/comments`, { body: { body } });
+  }
+  /** Deletes one comment. A comment id from another row answers 404. */
+  deleteTeamItemComment<T = unknown>(listId: string, itemId: string, commentId: string): Promise<T> {
+    return this.request('DELETE', `/team-chat/lists/${encodeURIComponent(listId)}/items/${encodeURIComponent(itemId)}/comments/${encodeURIComponent(commentId)}`);
+  }
   /** Version history, newest first. Snapshots are NOT carried here — fetch one version for them. */
   getTeamListVersions<T = unknown>(listId: string): Promise<T> {
     return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/versions`);
