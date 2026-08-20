@@ -550,6 +550,10 @@ export class WebsiteScope {
   deleteTeamListView<T = unknown>(listId: string, viewId: string): Promise<T> {
     return this.request('DELETE', `/team-chat/lists/${encodeURIComponent(listId)}/views/${encodeURIComponent(viewId)}`);
   }
+  /** The list's columns. Rows are keyed by column ID — without this you cannot interpret them. */
+  getTeamListFields<T = unknown>(listId: string): Promise<T> {
+    return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/fields`);
+  }
   /** The list's views with their own item counts. Counts are computed, never stored. */
   getTeamListViews<T = unknown>(listId: string): Promise<T> {
     return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/views`);
