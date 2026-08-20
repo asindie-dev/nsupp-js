@@ -538,6 +538,20 @@ export class WebsiteScope {
     const res = await fetch(uploadUrl, { method: 'PUT', body: bytes as BodyInit });
     return (await res.json()) as T;
   }
+  /** Who a list is open to, plus its access level. Lists and canvases run through ONE permission rule. */
+  getTeamListShares<T = unknown>(listId: string): Promise<T> {
+    return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/shares`);
+  }
+  /** Opens a list to a channel your app can see. Sharing the same channel twice UPDATES the permission. */
+  shareTeamList<T = unknown>(listId: string, channelId: string, canEdit?: boolean): Promise<T> {
+    return this.request('POST', `/team-chat/lists/${encodeURIComponent(listId)}/shares`, {
+      body: canEdit === undefined ? { channel_id: channelId } : { channel_id: channelId, can_edit: canEdit },
+    });
+  }
+  /** Revokes one share. A share id from another list answers 404 — an id is never a side door. */
+  revokeTeamListShare<T = unknown>(listId: string, shareId: string): Promise<T> {
+    return this.request('DELETE', `/team-chat/lists/${encodeURIComponent(listId)}/shares/${encodeURIComponent(shareId)}`);
+  }
   /** Rows in a list, in order. A list is a small database: each row carries values keyed by FIELD ID. */
   listTeamListItems<T = unknown>(listId: string): Promise<T> {
     return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/items`);
