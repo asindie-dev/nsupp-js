@@ -509,6 +509,14 @@ export class WebsiteScope {
   listTeamCanvasTemplates<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/templates');
   }
+  /**
+   * Revokes one share on a canvas. Requires edit access — the same gate as sharing, because a
+   * viewer cutting off other people's access would overrule whoever decided who may read it.
+   * A share id from another canvas answers 404: an id must never become a side door.
+   */
+  revokeTeamCanvasShare<T = unknown>(docId: string, shareId: string): Promise<T> {
+    return this.request('DELETE', `/team-chat/docs/${encodeURIComponent(docId)}/shares/${encodeURIComponent(shareId)}`);
+  }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
   listTeamLists<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/lists');
