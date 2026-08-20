@@ -433,6 +433,17 @@ export class WebsiteScope {
   shareTeamCanvas<T = unknown>(docId: string, body: { channel_id: string; can_edit?: boolean }): Promise<T> {
     return this.request('POST', `/team-chat/docs/${encodeURIComponent(docId)}/shares`, { body });
   }
+  /**
+   * Sets (or removes) the canvas cover image.
+   *
+   * The image is NOT uploaded here — upload it first through your account's upload endpoint and
+   * pass the resulting URL. Only a URL from your own account is accepted; anything else is
+   * rejected with `cover_not_owned`, because a cover republishes that file inside your canvas.
+   * Pass `cover_url: null` to remove the cover — the stored object is deleted with it.
+   */
+  setTeamCanvasCover<T = unknown>(docId: string, body: { cover_url: string | null }): Promise<T> {
+    return this.request('PUT', `/team-chat/docs/${encodeURIComponent(docId)}/cover`, { body });
+  }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
   listTeamLists<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/lists');
