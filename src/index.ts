@@ -444,6 +444,22 @@ export class WebsiteScope {
   setTeamCanvasCover<T = unknown>(docId: string, body: { cover_url: string | null }): Promise<T> {
     return this.request('PUT', `/team-chat/docs/${encodeURIComponent(docId)}/cover`, { body });
   }
+  /**
+   * Every comment on a canvas, oldest first. Comments hang off a BLOCK, not off the document:
+   * key your mirror on `block_id`. Names are not returned — only `user_id` — because a name is
+   * personal data your integration does not need to do its job.
+   */
+  listTeamCanvasComments<T = unknown>(docId: string): Promise<T> {
+    return this.request('GET', `/team-chat/docs/${encodeURIComponent(docId)}/comments`);
+  }
+  /**
+   * Comments on one block of a canvas. You only need READ access — commenting does not change
+   * the document. The block must exist in the body; otherwise the comment would never be shown
+   * to anyone, so it answers 404 `block_not_found` instead of storing it.
+   */
+  commentOnTeamCanvasBlock<T = unknown>(docId: string, blockId: string, body: { body: string }): Promise<T> {
+    return this.request('POST', `/team-chat/docs/${encodeURIComponent(docId)}/blocks/${encodeURIComponent(blockId)}/comments`, { body });
+  }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
   listTeamLists<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/lists');
