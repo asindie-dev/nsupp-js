@@ -550,6 +550,10 @@ export class WebsiteScope {
   deleteTeamListView<T = unknown>(listId: string, viewId: string): Promise<T> {
     return this.request('DELETE', `/team-chat/lists/${encodeURIComponent(listId)}/views/${encodeURIComponent(viewId)}`);
   }
+  /** Cross-list task inbox. Takes an EXPLICIT user id — an API key has no "me". */
+  getTeamAssignedItems<T = unknown>(userId: string): Promise<T> {
+    return this.request('GET', `/team-chat/lists/assigned?user_id=${encodeURIComponent(userId)}`);
+  }
   /** The list's columns. Rows are keyed by column ID — without this you cannot interpret them. */
   getTeamListFields<T = unknown>(listId: string): Promise<T> {
     return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/fields`);
