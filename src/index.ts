@@ -382,6 +382,21 @@ export class WebsiteScope {
   }): Promise<T> {
     return this.request('GET', '/team-chat/files', { query });
   }
+  /**
+   * Reads a canvas. THE BODY IS AN ARRAY OF BLOCKS, not one blob of HTML: each block keeps a
+   * stable `id` because comments and reactions attach to a block, not to a character offset.
+   */
+  getTeamCanvas<T = unknown>(docId: string): Promise<T> {
+    return this.request('GET', `/team-chat/docs/${encodeURIComponent(docId)}`);
+  }
+  /**
+   * Replaces the title, the body, or both — an omitted field is left alone. The body you send is
+   * the WHOLE body, so read, modify, write, and keep the ids of blocks you did not touch: a new
+   * id means a new block, and a comment attached to the old one has nothing left to point at.
+   */
+  updateTeamCanvas<T = unknown>(docId: string, body: { title?: string; body?: { id: string; type: string; text?: string }[] }): Promise<T> {
+    return this.request('PUT', `/team-chat/docs/${encodeURIComponent(docId)}`, { body });
+  }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
   listTeamLists<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/lists');
