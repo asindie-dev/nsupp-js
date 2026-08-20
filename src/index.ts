@@ -517,6 +517,27 @@ export class WebsiteScope {
   revokeTeamCanvasShare<T = unknown>(docId: string, shareId: string): Promise<T> {
     return this.request('DELETE', `/team-chat/docs/${encodeURIComponent(docId)}/shares/${encodeURIComponent(shareId)}`);
   }
+  /**
+   * Step 1 of an upload: asks for an upload URL for a file you are about to send.
+   *
+   * Uploading is TWO STEPS on purpose. This call returns `upload_url` and `file_id`; you then
+   * PUT the raw bytes to that URL (no auth header needed — the URL itself is signed and
+   * short-lived), and it answers with the stored file's address.
+   *
+   * The extension is checked HERE, before you send anything: being told "this type is not
+   * allowed" after uploading 20 MB would waste your bandwidth and your time.
+   */
+  getTeamFileUploadUrl<T = unknown>(body: { filename: string }): Promise<T> {
+    return this.request('POST', '/team-chat/files/upload-url', { body });
+  }
+  /**
+   * Step 2: PUT the raw bytes to the URL from step 1. The filename comes from the signed
+   * ticket, not from this call, so the extension check cannot be side-stepped by renaming.
+   */
+  async uploadTeamFileBytes<T = unknown>(uploadUrl: string, bytes: Uint8Array | Blob): Promise<T> {
+    const res = await fetch(uploadUrl, { method: 'PUT', body: bytes as BodyInit });
+    return (await res.json()) as T;
+  }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
   listTeamLists<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/lists');
