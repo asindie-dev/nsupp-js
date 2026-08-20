@@ -538,6 +538,38 @@ export class WebsiteScope {
     const res = await fetch(uploadUrl, { method: 'PUT', body: bytes as BodyInit });
     return (await res.json()) as T;
   }
+  /** Rows in a list, in order. A list is a small database: each row carries values keyed by FIELD ID. */
+  listTeamListItems<T = unknown>(listId: string): Promise<T> {
+    return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/items`);
+  }
+  /** One row with its values. A row id from another list answers 404 — an id is never a side door. */
+  getTeamListItem<T = unknown>(listId: string, itemId: string): Promise<T> {
+    return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/items/${encodeURIComponent(itemId)}`);
+  }
+  /**
+   * Adds a row. `initial_fields` is keyed by FIELD ID; unknown keys are dropped rather than
+   * stored, and every value is normalised to its column's type — a select only keeps a value
+   * that exists in that column's options.
+   */
+  createTeamListItem<T = unknown>(listId: string, body: { initial_fields?: Record<string, unknown> }): Promise<T> {
+    return this.request('POST', `/team-chat/lists/${encodeURIComponent(listId)}/items`, { body });
+  }
+  /** Updates a row. PARTIAL: a field you do not send is left alone — editing one cell never clears another. */
+  updateTeamListItem<T = unknown>(listId: string, itemId: string, body: { fields: Record<string, unknown> }): Promise<T> {
+    return this.request('PATCH', `/team-chat/lists/${encodeURIComponent(listId)}/items/${encodeURIComponent(itemId)}`, { body });
+  }
+  /** Deletes one row. */
+  deleteTeamListItem<T = unknown>(listId: string, itemId: string): Promise<T> {
+    return this.request('DELETE', `/team-chat/lists/${encodeURIComponent(listId)}/items/${encodeURIComponent(itemId)}`);
+  }
+  /**
+   * Deletes many rows in one call — a SEPARATE endpoint on purpose, so "delete a row" and
+   * "delete a hundred rows" are never the same request. The answer names what was deleted AND
+   * what was not found: saying "all gone" would hide the ones that were not.
+   */
+  deleteTeamListItems<T = unknown>(listId: string, body: { item_ids: string[] }): Promise<T> {
+    return this.request('POST', `/team-chat/lists/${encodeURIComponent(listId)}/items/delete`, { body });
+  }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
   listTeamLists<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/lists');
