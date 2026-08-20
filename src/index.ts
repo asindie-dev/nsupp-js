@@ -348,6 +348,29 @@ export class WebsiteScope {
     return this.request('POST', '/team-chat/dm', { body: { user_id: userId, content, ...(blocks ? { blocks } : {}) } });
   }
   /**
+   * Agent surface of one DM: its title, a transient status line and suggested prompts.
+   *
+   * Partial update: only the fields you pass change. `null` CLEARS a field; omitting it leaves
+   * it alone — if those meant the same thing, taking a status line back down would be impossible.
+   * Your app must have the agent surface enabled, otherwise 403 `agent_not_enabled`.
+   */
+  setAgentThread<T = unknown>(
+    channelId: string,
+    patch: { title?: string | null; status?: string | null; suggested_prompts?: string[] },
+  ): Promise<T> {
+    return this.request('POST', `/team-chat/assistant/${encodeURIComponent(channelId)}`, { body: patch });
+  }
+  /**
+   * Appends text to a message you posted with `stream: true`, so a long answer appears as it is
+   * written. Send ONLY the new chunk — the append happens on our side, because read-modify-write
+   * from your side loses a chunk whenever two arrive close together.
+   * Always finish with `done: true`, including on your own error paths: a message left in the
+   * growing state is one the reader watches forever.
+   */
+  streamTeamMessage<T = unknown>(messageId: string, patch: { text?: string; done?: boolean }): Promise<T> {
+    return this.request('POST', `/team-chat/messages/${encodeURIComponent(messageId)}/stream`, { body: patch });
+  }
+  /**
    * YALNIZ BİR KİŞİNİN gördüğü mesaj (Slack `chat.postEphemeral`). İki taraf da kanalda olmalıdır:
    * göremediği bir kanalın İÇİNDE birine mesaj göstermek, o kanalın varlığını sızdırırdı.
    */
