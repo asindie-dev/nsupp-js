@@ -375,8 +375,15 @@ export class WebsiteScope {
    * Adds one typed column. `created_at`/`updated_at`/`created_by` are filled in by us and refused
    * as writes — letting an app set "created at" would let it rewrite when a row happened.
    * Reusing a `key` answers 409 rather than overwriting, so existing data can never be hidden.
+   *
+   * A `select` column's options carry colour: `{ value, label, color? }`. The cell stores the
+   * `value`, so renaming an option never strands old rows. `color` comes from a closed palette
+   * (default `gray`) — free hex is refused so both themes can guarantee a readable chip.
    */
-  addTeamListField<T = unknown>(listId: string, body: { key: string; type: string; label: string; options?: string[] }): Promise<T> {
+  addTeamListField<T = unknown>(
+    listId: string,
+    body: { key: string; type: string; label: string; options?: { value: string; label: string; color?: TeamListOptionColor }[] },
+  ): Promise<T> {
     return this.request('POST', `/team-chat/lists/${encodeURIComponent(listId)}/fields`, { body });
   }
   /**
@@ -569,6 +576,24 @@ export class WebsiteScope {
 }
 
 // ── Web Hook signature verification ────────────────────────────────────────────
+/**
+ * The closed colour palette a `select` list option may use. It is a NAME, not a pixel value:
+ * light and dark themes paint the same name differently, which is what keeps chips readable in
+ * both. Free hex is refused by the server on purpose.
+ */
+export type TeamListOptionColor =
+  | 'indigo'
+  | 'blue'
+  | 'cyan'
+  | 'pink'
+  | 'yellow'
+  | 'green'
+  | 'gray'
+  | 'red'
+  | 'purple'
+  | 'orange'
+  | 'brown';
+
 export interface WebhookVerifyInput {
   /** The RAW request body, exactly as received (do NOT re-parse/re-serialize — that changes the bytes). */
   payload: string;
