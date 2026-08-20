@@ -376,6 +376,18 @@ export class WebsiteScope {
     nav?: 'all' | 'lists' | 'canvases';
     /** Comma-separated kinds. Narrows, and combines with `nav` — an empty intersection returns nothing. */
     types?: string;
+    /** Title search. An EMPTY string means everything, not nothing. */
+    q?: string;
+    /** Only `all` for app tokens: mine/shared are per-person and answer 400. */
+    scope?: 'all';
+    /** Only `updated` for app tokens: `recent` (recently viewed) is per-person and answers 400. */
+    sort?: 'updated';
+    /** Person id — the filter dialog's `From`. Different from `scope`; both can be sent. */
+    from?: string;
+    /** Channel id — the filter dialog's `In`. */
+    in?: string;
+    /** ISO timestamp — only files updated at or after it. */
+    since?: string;
     limit?: number;
     after?: string;
     after_id?: string;
