@@ -360,6 +360,25 @@ export class WebsiteScope {
   ): Promise<T> {
     return this.request('POST', `/team-chat/assistant/${encodeURIComponent(channelId)}`, { body: patch });
   }
+  /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
+  listTeamLists<T = unknown>(): Promise<T> {
+    return this.request('GET', '/team-chat/lists');
+  }
+  /**
+   * Creates an empty list. Give it columns next: a list with no columns is a table with no shape,
+   * so nothing can be written into it yet. Pass `channel_id` to hang it on a channel tab.
+   */
+  createTeamList<T = unknown>(body: { title: string; description?: string; channel_id?: string }): Promise<T> {
+    return this.request('POST', '/team-chat/lists', { body });
+  }
+  /**
+   * Adds one typed column. `created_at`/`updated_at`/`created_by` are filled in by us and refused
+   * as writes — letting an app set "created at" would let it rewrite when a row happened.
+   * Reusing a `key` answers 409 rather than overwriting, so existing data can never be hidden.
+   */
+  addTeamListField<T = unknown>(listId: string, body: { key: string; type: string; label: string; options?: string[] }): Promise<T> {
+    return this.request('POST', `/team-chat/lists/${encodeURIComponent(listId)}/fields`, { body });
+  }
   /**
    * Appends text to a message you posted with `stream: true`, so a long answer appears as it is
    * written. Send ONLY the new chunk — the append happens on our side, because read-modify-write
