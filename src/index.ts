@@ -360,6 +360,17 @@ export class WebsiteScope {
   ): Promise<T> {
     return this.request('POST', `/team-chat/assistant/${encodeURIComponent(channelId)}`, { body: patch });
   }
+  /**
+   * The files this app can see: lists, plus every file attached to a message in a channel the app
+   * can see. There is no separate file store behind this — a file is either a list or an
+   * attachment on a message — so a file disappears exactly when the thing holding it does.
+   *
+   * Newest first. Page with `after` + `after_id` (the last row's `updated_at` and `file_id`);
+   * a page shorter than `limit` means you reached the end.
+   */
+  listTeamFiles<T = unknown>(query?: { limit?: number; after?: string; after_id?: string }): Promise<T> {
+    return this.request('GET', '/team-chat/files', { query });
+  }
   /** Lists in this account. A list is a small database — rows with typed columns — not a to-do. */
   listTeamLists<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/lists');
