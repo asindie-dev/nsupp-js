@@ -545,6 +545,18 @@ export class WebsiteScope {
   ): Promise<T> {
     return this.request('PATCH', `/team-chat/lists/${encodeURIComponent(listId)}`, { body: patch });
   }
+  /** Starts a CSV export. Returns a job_id; the job is already complete and EXPIRES after 24h. */
+  startTeamListExport<T = unknown>(listId: string): Promise<T> {
+    return this.request('POST', `/team-chat/lists/${encodeURIComponent(listId)}/export`, { body: {} });
+  }
+  /** Job state + download_url. A job id from another list answers 404; an expired job answers 410. */
+  getTeamListExport<T = unknown>(listId: string, jobId: string): Promise<T> {
+    return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/export/${encodeURIComponent(jobId)}`);
+  }
+  /** The CSV bytes. Authenticated like every other call — the link is not a capability. */
+  downloadTeamListExport<T = unknown>(listId: string, jobId: string): Promise<T> {
+    return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/export/${encodeURIComponent(jobId)}/download`);
+  }
   /** Who a list is open to, plus its access level. Lists and canvases run through ONE permission rule. */
   getTeamListShares<T = unknown>(listId: string): Promise<T> {
     return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/shares`);
