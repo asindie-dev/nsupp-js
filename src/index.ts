@@ -495,6 +495,11 @@ export class WebsiteScope {
    * There is no `size` and no `sha`, and that is deliberate rather than missing: the plane does
    * not store them, and a canvas or a list has no bytes at all — one is a block array, the
    * other a set of rows. Returning 0 would tell you we measured and found nothing.
+   *
+   * For plain-text files you also get `preview` (first lines), `lines` (the real total),
+   * `lines_more` (what the preview leaves out) and `preview_is_truncated`. The server reads the
+   * file for you because `url` is a storage address, not an authenticated endpoint — a browser
+   * cannot even read it cross-origin. All four are null for anything that is not text.
    */
   getTeamFile<T = unknown>(fileId: string): Promise<T> {
     return this.request('GET', `/team-chat/files/${encodeURIComponent(fileId)}`);
