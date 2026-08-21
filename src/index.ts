@@ -510,6 +510,8 @@ export class WebsiteScope {
    * developer surface, and an integration cannot be expected to resolve an eight-language key
    * catalogue. Templates live in code, not in your account, so every workspace sees the same
    * set and nobody can delete one by accident.
+   *
+   * The response carries TWO catalogues in separate fields: `templates` (canvas — each with a body of blocks) and `list_templates` (each with a typed column SCHEMA). They are separate because a body and a schema are different things, and merging them would force you to guess which kind you are holding. Apply a list template by passing `template_id` to list creation — do not build the columns yourself, or a request that dies halfway leaves a half-built table.
    */
   listTeamCanvasTemplates<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/templates');
@@ -717,6 +719,8 @@ export class WebsiteScope {
   /**
    * Creates an empty list. Give it columns next: a list with no columns is a table with no shape,
    * so nothing can be written into it yet. Pass `channel_id` to hang it on a channel tab.
+   *
+   * `template_id` creates the list from a built-in list template; its columns are created server-side, in order. Read the ids from the templates endpoint (`list_templates`). An unknown id answers 400 `template_not_found` rather than quietly making an empty list — a table silently missing the columns you asked for is worse than none.
    */
   createTeamList<T = unknown>(body: { title: string; description?: string; channel_id?: string }): Promise<T> {
     return this.request('POST', '/team-chat/lists', { body });
