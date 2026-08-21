@@ -748,6 +748,22 @@ export class WebsiteScope {
   deleteTeamWorkflow<T = unknown>(workflowId: string): Promise<T> {
     return this.request('DELETE', `/team-chat/workflows/${encodeURIComponent(workflowId)}`);
   }
+  /** Reads who a canvas is open to, and at which level — the twin of the list endpoint, so what you know about one is true of the other. The access level (`invite_only` / `org_view` / `org_edit`) is a property of the CANVAS, not of a share row: "everyone in the workspace can see it" has no target. `only_owner_can_share` tells you whether the creator limited sharing to themselves — read it before you try, rather than discovering it as a 403. */
+  getTeamCanvasShares<T = unknown>(docId: string): Promise<T> {
+    return this.request('GET', `/team-chat/docs/${encodeURIComponent(docId)}/shares`);
+  }
+  /** Removes a comment from a canvas. Your app could already WRITE comments; not being able to remove them was a one-way authority. An app has no "own" comments (there is no person behind an API key), so the rule that applies to you is the other half of the product's: you need EDIT access on the canvas. A comment id that is not on this canvas answers 404 rather than being looked up globally. */
+  deleteTeamCanvasComment<T = unknown>(docId: string, commentId: string): Promise<T> {
+    return this.request('DELETE', `/team-chat/docs/${encodeURIComponent(docId)}/comments/${encodeURIComponent(commentId)}`);
+  }
+  /** Puts an earlier version back. RESTORING IS A WRITE: view access is not enough. The restore itself becomes its OWN version (carrying `restored_from`) and is never coalesced into the previous one, so "who went back to which version, and when" stays visible in the history. A version id belonging to another canvas answers 404 — otherwise one document's body could be overwritten with another's past. */
+  restoreTeamCanvasVersion<T = unknown>(docId: string, versionId: string): Promise<T> {
+    return this.request('POST', `/team-chat/docs/${encodeURIComponent(docId)}/versions/${encodeURIComponent(versionId)}/restore`);
+  }
+  /** Sets a list's general access level — the twin of what canvases could already do through their PATCH. CHANGING THE LEVEL IS A SHARING ACT, so it needs the same permission sharing does: if the owner turned on "only you can share", this answers `share_locked` too. An unknown value is refused rather than quietly ignored. Careful: lowering to `org_view` can remove YOUR OWN edit right, if that right came from `org_edit`. */
+  setTeamListAccess<T = unknown>(listId: string, body: { access: 'invite_only' | 'org_view' | 'org_edit' }): Promise<T> {
+    return this.request('PUT', `/team-chat/lists/${encodeURIComponent(listId)}/access`, { body });
+  }
   /**
    * Lists the workflow steps this workspace can actually use — the ones declared by apps installed here, not the whole catalogue. Each entry hands you `step_type` already assembled (`plugin:<app_id>:<callback_id>`); put that straight into a workflow's `steps[].type` rather than building the string yourself. `input_parameters` tells you which keys belong in that step's `config`.
    */
