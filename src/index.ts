@@ -733,8 +733,10 @@ export class WebsiteScope {
   /**
    * Workflows are automations with ONE beginning and a list of steps. Trigger types: `link` · `scheduled` (every hourly/daily/weekly/yearly) · `event` (an eventType, optionally narrowed to channels) · `webhook`. A new workflow is born as a DRAFT and a draft never fires — publishing is a separate act. Steps today are app-provided only (`plugin:<plugin_id>:<callback_id>`): the official source gives the triggers but not the full built-in step catalogue, and offering steps that do nothing would make the builder a list of promises.
    */
-  listTeamWorkflows<T = unknown>(): Promise<T> {
-    return this.request('GET', '/team-chat/workflows');
+  /** Pass `connector` to keep only the workflows whose steps come from one app; the response also carries `connectors`, the ids of every app that actually supplies a step here \u2014 derived from the steps themselves, so the filter can never offer an option that matches nothing. LIST AUTOMATIONS ARE NOT IN THIS LIST: a form or due-date automation belongs to its list and is read with the list's own workflows call, because one object managed from two places raises \u201cwhich one is right?\u201d. The `owner` filter exists in the product but not here: it means \u201cmanaged by me\u201d and an API key has no person behind it, so it answers 400 rather than an empty list. */
+  listTeamWorkflows<T = unknown>(query?: { connector?: string }): Promise<T> {
+    const q = query?.connector ? `?connector=${encodeURIComponent(query.connector)}` : '';
+    return this.request('GET', `/team-chat/workflows${q}`);
   }
   /** Creates a DRAFT workflow — publish it separately, because a draft never fires. */
   createTeamWorkflow<T = unknown>(body: { name: string; trigger: Record<string, unknown>; steps?: unknown[]; description?: string }): Promise<T> {
