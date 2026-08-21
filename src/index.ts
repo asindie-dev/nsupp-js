@@ -731,6 +731,24 @@ export class WebsiteScope {
     return this.request('POST', '/team-chat/lists', { body });
   }
   /**
+   * Workflows are automations with ONE beginning and a list of steps. Trigger types: `link` · `scheduled` (every hourly/daily/weekly/yearly) · `event` (an eventType, optionally narrowed to channels) · `webhook`. A new workflow is born as a DRAFT and a draft never fires — publishing is a separate act. Steps today are app-provided only (`plugin:<plugin_id>:<callback_id>`): the official source gives the triggers but not the full built-in step catalogue, and offering steps that do nothing would make the builder a list of promises.
+   */
+  listTeamWorkflows<T = unknown>(): Promise<T> {
+    return this.request('GET', '/team-chat/workflows');
+  }
+  /** Creates a DRAFT workflow — publish it separately, because a draft never fires. */
+  createTeamWorkflow<T = unknown>(body: { name: string; trigger: Record<string, unknown>; steps?: unknown[]; description?: string }): Promise<T> {
+    return this.request('POST', '/team-chat/workflows', { body });
+  }
+  /** Partial patch; a field you do not send does not change. `published: true` publishes. */
+  updateTeamWorkflow<T = unknown>(workflowId: string, body: Record<string, unknown>): Promise<T> {
+    return this.request('PATCH', `/team-chat/workflows/${encodeURIComponent(workflowId)}`, { body });
+  }
+  /** Deletes the workflow; its trigger goes with it (the trigger is a field, not an object). */
+  deleteTeamWorkflow<T = unknown>(workflowId: string): Promise<T> {
+    return this.request('DELETE', `/team-chat/workflows/${encodeURIComponent(workflowId)}`);
+  }
+  /**
    * Adds a message to a list as a RECORD — this is how the `message` column gets filled, and it is the join between chat and lists rather than a separate concept. The cell stores a REFERENCE, never a copy of the text, so deleting the message empties the cell on its own. You must be able to see the message AND edit the list. The list must already have a `message` column; we answer 400 rather than adding one, because a column cannot be removed afterwards.
    */
   addMessageToList<T = unknown>(messageId: string, body: { list_id: string }): Promise<T> {
