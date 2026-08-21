@@ -369,8 +369,10 @@ export class WebsiteScope {
    * a page shorter than `limit` means you reached the end.
    *
    * `nav` picks a sub-view: `all` (default), `lists`, `canvases`. The per-person views
-   * (assigned / recent / starred) are refused with `nav_requires_person` — an app token has no
-   * person behind it, and an empty array would read as "you have none".
+   * (assigned / recent / starred / downloads) are refused with `nav_requires_person` — an app
+   * token has no person behind it, and an empty array would read as "you have none".
+   * A PDF row may carry `preview_url` — its first page rendered to a PNG at upload time; the
+   * field is optional and null when the preview could not be produced.
    */
   listTeamFiles<T = unknown>(query?: {
     nav?: 'all' | 'lists' | 'canvases';
