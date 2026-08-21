@@ -764,6 +764,17 @@ export class WebsiteScope {
   setTeamListAccess<T = unknown>(listId: string, body: { access: 'invite_only' | 'org_view' | 'org_edit' }): Promise<T> {
     return this.request('PUT', `/team-chat/lists/${encodeURIComponent(listId)}/access`, { body });
   }
+  /** Lists the ready-made automations for a list and the questions its form would ask. THREE templates exist — `form`, `due_date_notifications`, `due_date_summary` — and each row tells you whether it is set up (`workflow_id`) and whether it is live (`published`). The form's questions are DERIVED from the list's columns every time you read, never stored: rename a column and the question renames with it. Computed columns (created time, last edited time, created by) are never asked — a form cannot let someone write the record's own timestamp. */
+  listTeamListAutomations<T = unknown>(listId: string): Promise<T> {
+    return this.request('GET', `/team-chat/lists/${encodeURIComponent(listId)}/workflows`);
+  }
+  /** Sets up one ready-made automation on a list — the API twin of the product's `Set Up` button. A form is not a separate object: it is a WORKFLOW, which is why finishing it is a publish. It is born as a DRAFT and a draft accepts no submissions; publish it with `updateTeamWorkflow({ published: true })`. Config per template: `form` takes `hiddenFieldIds` (the eye icon — hiding every question is refused, since a form with no questions is a button that files blank records); the two due-date templates take `dueDateFieldId` and must point at a real DATE column, and `due_date_summary` also needs a `channelId` to post into. One template per list: setting up a second `form` answers 409, because otherwise "copy the form link" would have no answer. */
+  createTeamListAutomation<T = unknown>(
+    listId: string,
+    body: { template: 'form' | 'due_date_notifications' | 'due_date_summary'; config?: Record<string, unknown> },
+  ): Promise<T> {
+    return this.request('POST', `/team-chat/lists/${encodeURIComponent(listId)}/workflows`, { body });
+  }
   /**
    * Lists the workflow steps this workspace can actually use — the ones declared by apps installed here, not the whole catalogue. Each entry hands you `step_type` already assembled (`plugin:<app_id>:<callback_id>`); put that straight into a workflow's `steps[].type` rather than building the string yourself. `input_parameters` tells you which keys belong in that step's `config`.
    */
