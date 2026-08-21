@@ -733,7 +733,7 @@ export class WebsiteScope {
   /**
    * Workflows are automations with ONE beginning and a list of steps. Trigger types: `link` · `scheduled` (every hourly/daily/weekly/yearly) · `event` (an eventType, optionally narrowed to channels) · `webhook`. A new workflow is born as a DRAFT and a draft never fires — publishing is a separate act. Steps today are app-provided only (`plugin:<plugin_id>:<callback_id>`): the official source gives the triggers but not the full built-in step catalogue, and offering steps that do nothing would make the builder a list of promises.
    */
-  /** Lists the channel templates in this workspace. A template BUNDLES canvases, lists and workflows so a new channel starts with the things it always needs, and carries a `channel_prefix` that standardises names. It holds REFERENCES, not copies \u2014 editing the source keeps the template current, and applying it makes copies so two channels never edit the same document. Items you cannot see are not listed, and an item whose target was deleted drops out. */
+  /** Lists the channel templates in this workspace. A template BUNDLES canvases, lists and workflows so a new channel starts with the things it always needs, and carries a `channel_prefix` that standardises names. A template is FROZEN when you build it: adding an item duplicates what it points at, so editing or deleting the source afterwards changes nothing. Applying it makes another copy, so two channels never edit the same document. */
   listTeamChannelTemplates<T = unknown>(): Promise<T> {
     return this.request('GET', '/team-chat/channel-templates');
   }
@@ -746,7 +746,7 @@ export class WebsiteScope {
   }): Promise<T> {
     return this.request('POST', '/team-chat/channel-templates', { body });
   }
-  /** Deletes a template and its items. The objects it pointed at are UNTOUCHED: a template is a recipe, not a container. Channels already built from it keep everything, because those were copies from the start. */
+  /** Deletes a template and its items. The objects it was built from are UNTOUCHED \u2014 the template carried its own copy. Channels already built from it keep everything, because those were copies too. */
   deleteTeamChannelTemplate<T = unknown>(templateId: string): Promise<T> {
     return this.request('DELETE', `/team-chat/channel-templates/${encodeURIComponent(templateId)}`);
   }
