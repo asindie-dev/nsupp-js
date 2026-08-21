@@ -727,7 +727,7 @@ export class WebsiteScope {
    *
    * `template_id` creates the list from a built-in list template; its columns are created server-side, in order. Read the ids from the templates endpoint (`list_templates`). An unknown id answers 400 `template_not_found` rather than quietly making an empty list — a table silently missing the columns you asked for is worse than none.
    */
-  createTeamList<T = unknown>(body: { title: string; description?: string; channel_id?: string }): Promise<T> {
+  createTeamList<T = unknown>(body: { title: string; description?: string; channel_id?: string; template_id?: string; todo_mode?: boolean }): Promise<T> {
     return this.request('POST', '/team-chat/lists', { body });
   }
   /**
