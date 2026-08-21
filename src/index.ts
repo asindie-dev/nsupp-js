@@ -726,6 +726,12 @@ export class WebsiteScope {
     return this.request('POST', '/team-chat/lists', { body });
   }
   /**
+   * Creates a NEW list from a CSV body — never adds columns to an existing table. Parsing happens server-side (RFC 4180: quoted commas and newlines, doubled quotes, BOM, CRLF), so a client that splits on commas cannot produce a different table than the API does. Column types are inferred conservatively — a column is checkbox/number/date/email only when EVERY non-empty cell matches, otherwise text; `select` is never guessed. Rows whose column count does not match are skipped and returned in `issues` with their FILE line number. Caps: 10 MB, 5000 rows.
+   */
+  importTeamListCsv<T = unknown>(body: { title: string; csv: string; has_header?: boolean }): Promise<T> {
+    return this.request('POST', '/team-chat/lists/import', { body });
+  }
+  /**
    * Adds one typed column. `created_at`/`updated_at`/`created_by` are filled in by us and refused
    * as writes — letting an app set "created at" would let it rewrite when a row happened.
    * Reusing a `key` answers 409 rather than overwriting, so existing data can never be hidden.
