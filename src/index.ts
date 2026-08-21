@@ -733,6 +733,23 @@ export class WebsiteScope {
   /**
    * Workflows are automations with ONE beginning and a list of steps. Trigger types: `link` · `scheduled` (every hourly/daily/weekly/yearly) · `event` (an eventType, optionally narrowed to channels) · `webhook`. A new workflow is born as a DRAFT and a draft never fires — publishing is a separate act. Steps today are app-provided only (`plugin:<plugin_id>:<callback_id>`): the official source gives the triggers but not the full built-in step catalogue, and offering steps that do nothing would make the builder a list of promises.
    */
+  /** Lists the channel templates in this workspace. A template BUNDLES canvases, lists and workflows so a new channel starts with the things it always needs, and carries a `channel_prefix` that standardises names. It holds REFERENCES, not copies \u2014 editing the source keeps the template current, and applying it makes copies so two channels never edit the same document. Items you cannot see are not listed, and an item whose target was deleted drops out. */
+  listTeamChannelTemplates<T = unknown>(): Promise<T> {
+    return this.request('GET', '/team-chat/channel-templates');
+  }
+  /** Creates a template from objects that ALREADY EXIST \u2014 you point at a canvas, list or workflow rather than describing one. Every item must be one you can see: an id you have no access to answers 404, because a template carrying an unreadable canvas would hand you a COPY of it on apply. A rejected request leaves nothing behind. The same object twice answers 409 (it would produce two copies); the same id in a different kind is a different object. At most 15 items \u2014 the channel tab limit. */
+  createTeamChannelTemplate<T = unknown>(body: {
+    name: string;
+    description?: string;
+    channel_prefix?: string;
+    items?: Array<{ kind: 'canvas' | 'list' | 'workflow'; refId: string }>;
+  }): Promise<T> {
+    return this.request('POST', '/team-chat/channel-templates', { body });
+  }
+  /** Deletes a template and its items. The objects it pointed at are UNTOUCHED: a template is a recipe, not a container. Channels already built from it keep everything, because those were copies from the start. */
+  deleteTeamChannelTemplate<T = unknown>(templateId: string): Promise<T> {
+    return this.request('DELETE', `/team-chat/channel-templates/${encodeURIComponent(templateId)}`);
+  }
   /** Pass `connector` to keep only the workflows whose steps come from one app; the response also carries `connectors`, the ids of every app that actually supplies a step here \u2014 derived from the steps themselves, so the filter can never offer an option that matches nothing. LIST AUTOMATIONS ARE NOT IN THIS LIST: a form or due-date automation belongs to its list and is read with the list's own workflows call, because one object managed from two places raises \u201cwhich one is right?\u201d. The `owner` filter exists in the product but not here: it means \u201cmanaged by me\u201d and an API key has no person behind it, so it answers 400 rather than an empty list. */
   listTeamWorkflows<T = unknown>(query?: { connector?: string }): Promise<T> {
     const q = query?.connector ? `?connector=${encodeURIComponent(query.connector)}` : '';
