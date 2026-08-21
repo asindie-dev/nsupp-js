@@ -640,8 +640,13 @@ export class WebsiteScope {
    * Adds a row. `initial_fields` is keyed by FIELD ID; unknown keys are dropped rather than
    * stored, and every value is normalised to its column's type — a select only keeps a value
    * that exists in that column's options.
+   *
+   * `parent_item_id` makes the new record a SUBTASK of another record in the SAME list. A subtask is not a separate object — it is a record with a parent — so it comes back in item listings with its parent set, and deleting the parent deletes it by cascade. A parent from another list is refused, because it would make that list readable from inside this one.
    */
-  createTeamListItem<T = unknown>(listId: string, body: { initial_fields?: Record<string, unknown> }): Promise<T> {
+  createTeamListItem<T = unknown>(
+    listId: string,
+    body: { initial_fields?: Record<string, unknown>; parent_item_id?: string },
+  ): Promise<T> {
     return this.request('POST', `/team-chat/lists/${encodeURIComponent(listId)}/items`, { body });
   }
   /** Updates a row. PARTIAL: a field you do not send is left alone — editing one cell never clears another. */
