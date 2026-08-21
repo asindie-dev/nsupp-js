@@ -731,6 +731,12 @@ export class WebsiteScope {
     return this.request('POST', '/team-chat/lists', { body });
   }
   /**
+   * Adds a message to a list as a RECORD — this is how the `message` column gets filled, and it is the join between chat and lists rather than a separate concept. The cell stores a REFERENCE, never a copy of the text, so deleting the message empties the cell on its own. You must be able to see the message AND edit the list. The list must already have a `message` column; we answer 400 rather than adding one, because a column cannot be removed afterwards.
+   */
+  addMessageToList<T = unknown>(messageId: string, body: { list_id: string }): Promise<T> {
+    return this.request('POST', `/team-chat/messages/${encodeURIComponent(messageId)}/add-to-list`, { body });
+  }
+  /**
    * Deletes a list and everything hanging off it — records, columns, views, shares, export jobs, stars and saved-for-later marks, by database cascade. No official counterpart exists (the twelve slackLists.* methods have no delete) but the product menu offers it, so hiding it from integrations would break the promise that you reach nearly all of the product. Needs edit access; there is no confirmation field, because confirmation is an interface decision.
    */
   deleteTeamList<T = unknown>(listId: string): Promise<T> {
