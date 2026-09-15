@@ -781,6 +781,10 @@ export class WebsiteScope {
   restoreTeamCanvasVersion<T = unknown>(docId: string, versionId: string): Promise<T> {
     return this.request('POST', `/team-chat/docs/${encodeURIComponent(docId)}/versions/${encodeURIComponent(versionId)}/restore`);
   }
+  /** Puts an earlier version of a list back. RESTORING IS A WRITE: view access is not enough. Rows are matched by ID, so a row deleted after the snapshot returns with the SAME id and rows added after it are removed; archived rows keep their original timestamp and sub-task links are restored, not flattened. COLUMNS ARE NOT TOUCHED — nothing in this API can delete a column, so a restore is not allowed to be more powerful than ordinary editing. The restore becomes its OWN version (`restored_from`) and is never coalesced. A TRUNCATED SNAPSHOT IS REFUSED with 409: it never held the whole list. */
+  restoreTeamListVersion<T = unknown>(listId: string, versionId: string): Promise<T> {
+    return this.request('POST', `/team-chat/lists/${encodeURIComponent(listId)}/versions/${encodeURIComponent(versionId)}/restore`);
+  }
   /** Sets a list's general access level — the twin of what canvases could already do through their PATCH. CHANGING THE LEVEL IS A SHARING ACT, so it needs the same permission sharing does: if the owner turned on "only you can share", this answers `share_locked` too. An unknown value is refused rather than quietly ignored. Careful: lowering to `org_view` can remove YOUR OWN edit right, if that right came from `org_edit`. */
   setTeamListAccess<T = unknown>(listId: string, body: { access: 'invite_only' | 'org_view' | 'org_edit' }): Promise<T> {
     return this.request('PUT', `/team-chat/lists/${encodeURIComponent(listId)}/access`, { body });
