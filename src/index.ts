@@ -463,6 +463,17 @@ export class WebsiteScope {
     return this.request('POST', `/team-chat/docs/${encodeURIComponent(docId)}/blocks/${encodeURIComponent(blockId)}/comments`, { body });
   }
   /**
+   * Toggles an emoji reaction on one block of a canvas. Send the same emoji again to remove it —
+   * the response tells you which way it went in `mine`. READ access is enough; a reaction does
+   * not change the document. The block must exist in the body, otherwise 404 `block_not_found`.
+   *
+   * The reaction is attributed to YOUR app's identity, not to a person: an app cannot react on
+   * behalf of a team member. Two apps therefore never overwrite each other's reactions.
+   */
+  reactToTeamCanvasBlock<T = unknown>(docId: string, blockId: string, body: { emoji: string }): Promise<T> {
+    return this.request('POST', `/team-chat/docs/${encodeURIComponent(docId)}/blocks/${encodeURIComponent(blockId)}/reactions`, { body });
+  }
+  /**
    * Version history of a canvas, newest first. The list carries NO bodies — ten full bodies
    * would make opening the history more expensive than opening the document. Fetch the one you
    * need with `getTeamCanvasVersion`. A version with `restored_from` set is a restore, and that
